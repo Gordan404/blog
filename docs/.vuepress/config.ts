@@ -32,7 +32,7 @@ export default defineUserConfig<DefaultThemeOptions>({
     editLinkPattern: ':repo/edit/master/:path',
     navbar: [
       {
-        text: '前端面试之道',
+        text: '前端面试指北',
         link: '/interview/'
       },
       {

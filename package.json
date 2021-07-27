@@ -1,7 +1,7 @@
 {
-  "name": "vuepress-starter",
+  "name": "狗蛋404实验室·知识库",
   "version": "1.0.0",
-  "description": "",
+  "description": "知识库强，则技术强，技术强则国强",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
