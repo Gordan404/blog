@@ -70,7 +70,162 @@ console.log(p2.age);  // 输出18
 
 ![对象当做函数参数图片](../assets/images/interview/1.png)
 
+### 原型、原型链
+![this解析流程图](../assets/images/interview/15.png)
+所有的JS对象都有一个`prototype`属性，指向它的原型对象。当试图访问一个对象的属性时，如果没有在该对象上找到，它还会顺着`proto`（隐式原型）`obj.__proto__.__proto__`该对象的原型的原型，依次层层向上搜索，直到找到一个名字匹配的属性或到达原型链的末尾(null).
 
+1. 原型对象也是普通的对象，是对象一个自带隐式的 `proto` 属性，原型也有可能有自己的原型，如果一个原型对象的原型不为 `null` 的话，我们就称之为原型链。
+2. 原型链是由一些用来继承和共享属性的对象组成的（有限的）对象链
+#### prototype 和 __proto__
+::: tip 
+构造函数拥有 prototype，对象没有。
+只有实例对象拥有 __proto__(函数也是一个对象)
+:::
+```js
+ var A = function(name) { this.name = name }
+ A.__proto__ === Function.prototype
+ A 是 Function 的实例，所以函数也拥有__proto__
+```
+### 继承
+在`JavaScript`ES6之前，实现继承需要依赖原型、原型链和构造函数等等技术手段组合使用，在ES6之后，可以使用`Class`类继承(并没有真正的类，只是一个语法糖，实质依然是函数)
+::: tip 继承的几种方式
+1. 原型链实现继承
+2. 借用构造函数实现继承
+3. 组合继承
+4. 寄生组合继承
+5. 类继承
+:::
+
+#### 原型链实现继承
+::: tip
+通过重写子类的原型，并将它指向父类的手段实现。这种方式实现的继承，创建出来的实例既是子类的实例，又是父类的实例。它有如下几种缺陷：
+1. 不能向父类构造函数传参
+2. 父类上的引用类型属性会被所有实例共享，其中一个实例改变时，会影响其他实例
+:::
+```js
+function Animal() {
+  this.colors = ['red','blue'];
+}
+function Dog(name) {
+  this.name = name;
+}
+Dog.prototype = new Animal();
+
+var dog1 = new Dog('旺财');
+var dog2 = new Dog('钢镚');
+dog2.colors.push('yellow');
+console.log(dog1.colors); // ["red", "blue", "yellow"]
+console.log(dog2.colors); // ["red", "blue", "yellow"]
+
+console.log(dog1 instanceof Dog);   // true
+console.log(dog1 instanceof Animal);// true
+```
+
+#### 借用构造函数实现继承
+:::tip
+借用构造函数实现继承，通过在子类中使用`call()`方法，实现借用父类构造函数并向父类构造函数传参的目的。但这种方法，无法继承父类原型对象上的属性和方法。
+:::
+```js
+function Animal(name) {
+  this.name = name;
+  this.colors = ['red','blue'];
+}
+Animal.prototype.eat = function() {
+  console.log(this.name + ' is eating!');
+}
+function Dog(name) {
+  Animal.call(this,name);
+}
+
+var dog1 = new Dog('旺财');
+var dog2 = new Dog('钢镚');
+dog2.colors.push('yellow');
+
+console.log(dog1.colors); // ["red", "blue"]
+console.log(dog2.colors); // ["red", "blue", "yellow"]
+
+console.log(dog1 instanceof Dog);   // true
+console.log(dog2 instanceof Animal);// false
+
+console.log(dog1.eat()); // 报错
+```
+
+#### 组合继承
+::: tip
+组合继承是组合了原型链继承和借用构造函数继承这两种方法，它保留了两种继承方式的优点，但它并不是百分百完美的：
+* 父类构造函数被调用多次。
+:::
+```js
+function Animal(name) {
+  this.name = name;
+  this.colors = ['red','blue'];
+}
+Animal.prototype.eat = function() {
+  console.log(this.name + ' is eatting');
+}
+function Dog(name) {
+  Animal.call(this,name);
+}
+Dog.prototype = new Animal(); // 第一次调用
+var dog1 = new Dog('dog1');   // 第二次调用
+var dog2 = new Dog('dog2');   // 第三次调用
+dog1.colors.push('yellow');
+console.log(dog1.name);  // 输出dog1
+console.log(dog2.colors);// 输出['red','blue']
+console.log(dog2.eat()); // 输出dog2 is eatting
+```
+
+#### 寄生组合继承
+::: tip
+寄生组合继承是在组合继承的基础上，采用`Object.create()`方法来改造实现
+:::
+```js
+function Animal(name) {
+  this.name = name;
+  this.colors = ['red','blue'];
+}
+Animal.prototype.eat = function() {
+  console.log(this.name + ' is eatting');
+}
+function Dog(name) {
+  Animal.call(this,name);
+}
+Dog.prototype = Object.create(Animal.prototype);
+Dog.prototype.constructor = Dog;
+var dog1 = new Dog('dog1');
+var dog2 = new Dog('dog2');
+dog1.colors.push('yellow');
+console.log(dog1.name);  // 输出dog1
+console.log(dog2.colors);// 输出['red','blue']
+console.log(dog2.eat()); // 输出dog2 is eatting
+```
+
+#### Class实现继承
+::: tip
+运用ES6 class新特性来实现继承
+:::
+```js
+class Animal {
+  constructor(name) {
+    this.name = name;
+    this.colors = ['red','blue'];
+  }
+  eat() {
+    console.log(this.name + ' is eatting');
+  }
+}
+class Dog extends Animal {
+  constructor(name) {
+    super(name);
+  }
+}
+var dog1 = new Dog('dog1');
+var dog2 = new Dog('dog2');
+dog1.colors.push('yellow');
+console.log(dog1.name);  // 输出dog1
+console.log(dog2.colors);// 输出['red','blue']
+console.log(dog2.eat()); // 输出dog2 is eatting
+```
 ### typeof和instanceof
 
 #### typeof
@@ -78,6 +233,7 @@ console.log(p2.age);  // 输出18
 `typeof`能准确判断除`null`以外的原始类型的值，对于对象类型，除了函数会判断成`function`，其他对象类型一律返回`object`
 :::
 ```js
+typeof null       // "object" `null`：所有机器码均为0, 000：对象
 typeof 1          // number
 typeof '1'        // string
 typeof true       // boolean
@@ -92,16 +248,37 @@ typeof console.log// function
 #### instanceof
 ::: tip
 `instanceof`通过原型链可以判断出对象的类型，但并不是百分百准确
+ 比如instanceofnstanceof能够正确判断[] 是Array的实例对象，但不能辨别 [] 不是Object的实例对象,因为它是顺着原型链一级一级往上找
 :::
 ```js
-function Person(name) {
-  this.name = name;
+  [] instanceof Array; //true
+  [] instanceof Object; //true
+  {} instanceof Object;//true
+  null  instanceof  null  // TypeError: Right-hand side of 'instanceof' is not an object
+  Object instanceof Object // true 
+  Function instanceof Function // true 
+  Function instanceof Object // true 
+  function Foo() { }
+  Foo instanceof Foo // false 
+  Foo instanceof Object // true 
+  Foo instanceof Function // true
+  Object.prototype.toString.call() // 完美解决方案
+```
+### 手写实现一个instanceof
+```js
+function myInstance(left,right){
+  left = left.__proto__
+  right = right.prototype
+  while(true){
+    if(left==null){
+      return false;
+    }
+    if(left===right){
+      return true;
+    }
+    left = left.__proto__
+  }
 }
-var p1 = new Person();
-console.log(p1 instanceof Person) // true
-
-var str = new String('abc');
-console.log(str instanceof String)// true
 ```
 
 ### 类型转换
@@ -207,7 +384,7 @@ if(a==1 && a==2 && a==3) {
 3. 绑定this到这个新对象上
 4. 返回新对象 
 
-### 手动实现一个new
+### 手写实现一个new
 ```js
   function _new(fun) {
     return function() {
@@ -417,10 +594,6 @@ for(let i=1;i<=5;i++){
   }, i*1000)
 }
 ```
-
-### 原型、原型链
-撰写中......
-
 ### 浅拷贝、深拷贝
 由于`JavaScript`中对象是引用类型，保存的是地址，深、浅拷贝的区别是，当拷贝结束后，在一定程度上改变原对象中的某一个引用类型属性的值，新拷贝出来的对象依然受影响的话，就是浅拷贝，反之就是深拷贝。
 
@@ -507,6 +680,8 @@ function deepClone(obj) {
   }
   var isArray = Array.isArray(obj);
   var newObj = isArray ? [...obj] : {...obj};
+  // Object.keys()返回属性key，但不包括不可枚举的属性
+  //Reflect.ownKeys() 返回所有属性key(包括不可枚举类型，不包括继承的属性）
   Reflect.ownKeys(newObj).forEach(key => {
     newObj[key] = isObject(newObj[key]) ? deepClone(newObj[key]) : newObj[key];
   })
@@ -543,148 +718,6 @@ console.log(newObj.name);     // 输出张三
 console.log(newObj.age);      // 输出23
 console.log(newObj.job.money);// 输出12，不受影响
 ```
-
-### 继承
-在`JavaScript`ES6之前，实现继承需要依赖原型、原型链和构造函数等等技术手段组合使用，在ES6之后，可以使用`Class`类继承(并没有真正的类，只是一个语法糖，实质依然是函数)
-::: tip 继承的几种方式
-1. 原型链实现继承
-2. 借用构造函数实现继承
-3. 组合继承
-4. 寄生组合继承
-5. 类继承
-:::
-
-#### 原型链实现继承
-::: tip
-通过重写子类的原型，并将它指向父类的手段实现。这种方式实现的继承，创建出来的实例既是子类的实例，又是父类的实例。它有如下几种缺陷：
-1. 不能向父类构造函数传参
-2. 父类上的引用类型属性会被所有实例共享，其中一个实例改变时，会影响其他实例
-:::
-```js
-function Animal() {
-  this.colors = ['red','blue'];
-}
-function Dog(name) {
-  this.name = name;
-}
-Dog.prototype = new Animal();
-
-var dog1 = new Dog('旺财');
-var dog2 = new Dog('钢镚');
-dog2.colors.push('yellow');
-console.log(dog1.colors); // ["red", "blue", "yellow"]
-console.log(dog2.colors); // ["red", "blue", "yellow"]
-
-console.log(dog1 instanceof Dog);   // true
-console.log(dog1 instanceof Animal);// true
-```
-
-#### 借用构造函数实现继承
-:::tip
-借用构造函数实现继承，通过在子类中使用`call()`方法，实现借用父类构造函数并向父类构造函数传参的目的。但这种方法，无法继承父类原型对象上的属性和方法。
-:::
-```js
-function Animal(name) {
-  this.name = name;
-  this.colors = ['red','blue'];
-}
-Animal.prototype.eat = function() {
-  console.log(this.name + ' is eating!');
-}
-function Dog(name) {
-  Animal.call(this,name);
-}
-
-var dog1 = new Dog('旺财');
-var dog2 = new Dog('钢镚');
-dog2.colors.push('yellow');
-
-console.log(dog1.colors); // ["red", "blue"]
-console.log(dog2.colors); // ["red", "blue", "yellow"]
-
-console.log(dog1 instanceof Dog);   // true
-console.log(dog2 instanceof Animal);// false
-
-console.log(dog1.eat()); // 报错
-```
-
-#### 组合继承
-::: tip
-组合继承是组合了原型链继承和借用构造函数继承这两种方法，它保留了两种继承方式的优点，但它并不是百分百完美的：
-* 父类构造函数被调用多次。
-:::
-```js
-function Animal(name) {
-  this.name = name;
-  this.colors = ['red','blue'];
-}
-Animal.prototype.eat = function() {
-  console.log(this.name + ' is eatting');
-}
-function Dog(name) {
-  Animal.call(this,name);
-}
-Dog.prototype = new Animal(); // 第一次调用
-var dog1 = new Dog('dog1');   // 第二次调用
-var dog2 = new Dog('dog2');   // 第三次调用
-dog1.colors.push('yellow');
-console.log(dog1.name);  // 输出dog1
-console.log(dog2.colors);// 输出['red','blue']
-console.log(dog2.eat()); // 输出dog2 is eatting
-```
-
-#### 寄生组合继承
-::: tip
-寄生组合继承是在组合继承的基础上，采用`Object.create()`方法来改造实现
-:::
-```js
-function Animal(name) {
-  this.name = name;
-  this.colors = ['red','blue'];
-}
-Animal.prototype.eat = function() {
-  console.log(this.name + ' is eatting');
-}
-function Dog(name) {
-  Animal.call(this,name);
-}
-Dog.prototype = Object.create(Animal.prototype);
-Dog.prototype.constructor = Dog;
-var dog1 = new Dog('dog1');
-var dog2 = new Dog('dog2');
-dog1.colors.push('yellow');
-console.log(dog1.name);  // 输出dog1
-console.log(dog2.colors);// 输出['red','blue']
-console.log(dog2.eat()); // 输出dog2 is eatting
-```
-
-#### Class实现继承
-::: tip
-运用ES6 class新特性来实现继承
-:::
-```js
-class Animal {
-  constructor(name) {
-    this.name = name;
-    this.colors = ['red','blue'];
-  }
-  eat() {
-    console.log(this.name + ' is eatting');
-  }
-}
-class Dog extends Animal {
-  constructor(name) {
-    super(name);
-  }
-}
-var dog1 = new Dog('dog1');
-var dog2 = new Dog('dog2');
-dog1.colors.push('yellow');
-console.log(dog1.name);  // 输出dog1
-console.log(dog2.colors);// 输出['red','blue']
-console.log(dog2.eat()); // 输出dog2 is eatting
-```
-
 ### ES6
 本章节只介绍ES6常考知识点，更多基础知识请直接跳转至[你不知道的JavaScript(中)](/books/javascript/know-down.md)
 #### var、let和const的区别
