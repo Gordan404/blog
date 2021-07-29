@@ -24,7 +24,7 @@ export default defineUserConfig<DefaultThemeOptions>({
     },
     lastUpdatedText: '最后更新时间', // 最近更新时间戳 标签的文字
     editLinkText: '编辑此页',
-    repo: 'https://github.com/lishuaixingNewBee',
+    repo: 'https://github.com/Gordan404/blog',
     repoLabel: 'Github',
     docsRepo: 'https://github.com/Gordan404/blog',
     docsBranch: 'master',
@@ -134,3 +134,8 @@ export default defineUserConfig<DefaultThemeOptions>({
     ]
   ]
 })
+
+const a = '%c  也许是OTA行业最好用的运营平台  %c 神笔系统'
+const b = 'color: #fadfa3; background: #030307; padding:5px 0;'
+const c = 'background: #fadfa3; padding:5px 0;'
+console.log(a, b, c)
