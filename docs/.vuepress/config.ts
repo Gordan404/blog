@@ -33,7 +33,24 @@ export default defineUserConfig<DefaultThemeOptions>({
     navbar: [
       {
         text: '前端面试指北',
-        link: '/interview/'
+        children: [
+          {
+            text: 'JavaScript基础知识',
+            link: '/interview/javascript.md'
+          },
+          {
+            text: 'HTML和CSS相关',
+            link: '/interview/h5.md'
+          },
+          {
+            text: '浏览器基础知识点及常考',
+            link: '/interview/browser.md'
+          },
+          {
+            text: 'JavaScript基础知识',
+            link: '/interview/README.md'
+          },
+        ]
       },
       {
         text: '前端书籍',
