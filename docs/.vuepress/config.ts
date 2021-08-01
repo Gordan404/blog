@@ -135,7 +135,4 @@ export default defineUserConfig<DefaultThemeOptions>({
   ]
 })
 
-const a = '%c  也许是OTA行业最好用的运营平台  %c 神笔系统'
-const b = 'color: #fadfa3; background: #030307; padding:5px 0;'
-const c = 'background: #fadfa3; padding:5px 0;'
-console.log(a, b, c)
+console.log('\x1B[32m', '知识库强，则技术强，技术强则国强-狗蛋404实验室·知识库')
