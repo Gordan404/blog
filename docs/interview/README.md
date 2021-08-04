@@ -1243,10 +1243,15 @@ window.requestAnimationFrame(render);
 
 ![EventLoop](../assets/images/interview/6.png)
 如上图，可以看到，不同的异步任务是有区别的，异步任务又可以划分如下：
-1. 宏任务(`script`、`setTimeout`、`setInterval`、`setImmidiate`、`I/O`、`UI Rendering`)可以有多个队列
+1. 宏任务(`script`、`setTimeout`、`setInterval`、`setImmidiate`、`I/O`、`UI Rendering`、可以有多个队列
 2. 微任务(`procress.nextTick`、`Promise.then`、`Object.observe`、`mutataionObserver`)只能有一个队列
 
-**执行顺序：** 当执行栈执行完毕后，会首先执行微任务队列，当微任务队列执行完毕再从宏任务中读取并执行，当再次遇到微任务时，放入微任务队列。
+**执行顺序：** 
+1. 首先执行同步代码，这属于宏任务
+2. 当执行完所有同步代码后，执行栈为空，查询是否有异步代码需要执行
+3. 执行所有微任务
+4. 当执行完所有微任务后，如有必要会渲染页面
+5. 然后开始下一轮 Event Loop，执行宏任务中的异步代码，也就是`setTimeout`中的回调函数
 ```js
 setTimeout(() => {
   console.log(1);
