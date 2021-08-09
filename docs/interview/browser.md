@@ -391,7 +391,6 @@ for(let i = 0; i < 1000; i++) { // 获取 offsetTop 会导致回流，因为需�
 6. 将频繁重绘或者回流的节点设置为图层，图层能够阻止该节点的渲染行为影响别的节点。比如对于`video`标签来说，浏览器会自动将该节点变为图层。
 7. var fragment = document.createDocumentFragment();
 ## 安全防范面试题
-
 ### XSS跨域脚本攻击
 ::: tip
 XSS攻击简单来说就是攻击者想尽一切办法把可执行的代码嵌入到页面中，可以窃取 Cookie 信息、监听用户行为（键盘事件输入密码）、修改DOM模拟登入框、插入悬浮广告，以达到非法窃取某些数据或者破坏的目的。
@@ -498,3 +497,119 @@ Origin 属性只包含了域名信息，并没有包含具体的 URL 路径
 :::
 
 ![中间人攻击](../assets/images/interview/13.jpg)
+
+### 异常监控
+**一、即使运行错误： 代码错误**
+```js
+// try...catch(IE)
+// window.onerror
+window.addEventListener('error', function(`errorMessage, scriptURI, lineNo, columnNo, error`) {
+    console.log('errorMessage: ' + errorMessage); // 异常信息
+    console.log('scriptURI: ' + scriptURI); // 异常文件路径  
+    console.log('lineNo: ' + lineNo); // 异常行号
+    console.log('columnNo: ' + columnNo); // 异常列号 
+    console.log('error: ' + error); // 异常堆栈信息
+}, true)
+// 跨域的js运行
+// 1.在script标签增加 crossorigin
+//  2. 服务端设置js资源响应头access-control-allow-headers： *
+```
+**二、资源加载错误**
+
+1. `object.onerror`（例如:img.onerror/video.onerror/script.onerror,且不会冒泡）
+2. `performance.getEntries()`
+3. 利用`window.onerror`的捕获
+
+**三、框架提供**
+
+1. Vue 2.x中我们应该这样捕获全局异常：`Vue.config.errorHandler`
+2. React 16.x 版本中引入了 `Error Boundary`
+3. `sourceMap`解析
+4. funbug 或者 bad.js等第三方库
+
+#### 上报错误信息
+1. 采用Ajax通信方式上报
+2. 利用newImage上报信息(代码简单，不需要第三方库, 可跨域，不需要接受会调响应)
+## 页面性能优化
+::: tip
+1. 降低请求量
+2. 加快请求速度
+3. 缓存
+4. 渲染: JS/CSS 优化，加载顺序，服务端渲染，pipeline。
+:::
+1. 使用HTTP2.0(首部压缩、多路复用、服务器推送)
+强烈建议阅读[JavaScript设计模式与开发实践](/designPattern/)
+2. 使用CDN
+3. DNS预解析(预热):DNS请求需要的带宽非常小，但是延迟却有点高，这点在手机网络上以及网站用到多域名资源特别明显，而一次典型的DNS解析一般需要20-200ms，所以DNS预解析可以让延迟明显减少一些。（尤其是移动网络环境下）页面的加载。在某些图片较多的页面中，在发起图片加载请求之前预先把域名解析好将会有至少 5% 的图片加载速度提升
+```html
+// 打开和关闭DNS预读取
+<meta http-equiv="x-dns-prefetch-control" content="on">
+// 强制查询特定主机名
+<link rel="dns-prefetch" href="//hm.baidu.com">
+// 关于a标签: 浏览器默认开启DNS预解析，但是在https下默认关闭，所以需要mata标签强制开启
+<a href="http://www.baidu.com"></a>
+```
+4. 利用浏览器缓存→缓存分类(强缓存、协商缓存)→缓存原理
+5. `Service Worker`，Service Worker的目的在于离线缓存，转发请求和网络代理。
+6. `Web Worker` 的作用，就是为 JavaScript 创造多线程环境，允许主线程创建 Worker 线程，将一些任务分配给后者运行
+```js
+var worker = new Worker('work.js');
+worker.postMessage('Hello World');
+worker.postMessage({method: 'echo', args: \['Work'\]});
+```
+``` js
+// 借助webpack插件WorkboxWebpackPlugin和ManifestPlugin,加载serviceWorker.js,通过serviceWorker.register()注册
+// Service Worker实际上是浏览器和服务器之间的代理服务器，它最大的特点是在页面中注册并安装成功后，运行于浏览器后台，不受页面刷新的影响，可以监听和截拦作用域范围内所有页面的 HTTP 请求。
+new WorkboxWebpackPlugin.GenerateSW({
+    clientsClaim: true,
+    exclude: [/\.map$/, /asset-manifest\.json$/],
+    importWorkboxFrom: 'cdn',
+    navigateFallback: paths.publicUrlOrPath + 'index.html',
+    navigateFallbackBlacklist: [
+        new RegExp('^/_'),
+        new RegExp('/[^/?]+\\.[^/]+$'),
+    ],
+}),
+
+new ManifestPlugin({
+    fileName: 'asset-manifest.json',
+    publicPath: paths.publicUrlOrPath,
+    generate: (seed, files, entrypoints) => {
+        const manifestFiles = files.reduce((manifest, file) => {
+            manifest[file.name] = file.path;
+            return manifest;
+        }, seed);
+        const entrypointFiles = entrypoints.app.filter(
+            fileName => !fileName.endsWith('.map')
+        );
+
+        return {
+            files: manifestFiles,
+            entrypoints: entrypointFiles,
+        };
+    },
+}),
+```
+7. 压缩资源合并，服务开启gzip，图片base/webp/雪碧图，骨架屏幕，懒加载,减少HTTP请求
+```js
+// 例如使用阿里云的oss存储服务，只需要在图片链接尾部拼接webp
+const isWebp =  document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') == 0;
+const url = `https://www.gordanlee.com/image/log.png?x-oss-process=image/format,webp`
+```
+8. 非核心代码异步加载→异步加载的方式→异步加载的区别
+``` js
+  1. defer —— 以前适用于IE，现在适用于所有主流浏览器
+  2. async —— h5新属性
+  3. 动态生成script标签jsonp,如vue按需加载
+```
+9. 窗口化:只加载当前窗口能显示的DOM元素，当视图变化时，删除隐藏的，添加要显示的DOM就可以保证页面上存在的dom元素数量永远不多，页面就不会卡顿
+```js
+ 1. npm i react-window // 使用react-window去做长列表渲染
+ 2. content-visibility: auto; // content-visibility可以实现可见网页只加载可见区域内容，使网页的渲染性能得到数倍(四倍)的提升。
+```
+## HTTP相关面试题
+### TCP和UDP
+
+### HTTP组成及TLS
+
+### HTTP2.0和HTTP3.0

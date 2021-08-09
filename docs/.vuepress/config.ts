@@ -38,7 +38,7 @@ export default defineUserConfig<DefaultThemeOptions>({
         children: [
           {
             text: 'JavaScript基础知识',
-            link: '/interview/javascript.md'
+            link: '/interview/README.md'
           },
           {
             text: 'HTML和CSS相关',
@@ -50,7 +50,7 @@ export default defineUserConfig<DefaultThemeOptions>({
           },
           {
             text: 'JavaScript基础知识',
-            link: '/interview/README.md'
+            link: '/interview/javascript.md'
           },
         ]
       },
