@@ -1,5 +1,7 @@
 import { defineUserConfig } from 'vuepress'
 import type { DefaultThemeOptions } from 'vuepress'
+const nav = require('../utils/nav.ts')
+const { webpackSidebar, vueAnalysisSidebar, vueNextAnalysisSidebar } = nav;
 export default defineUserConfig<DefaultThemeOptions>({
   lang: 'zh-CN',
   base: '/blog/', // 跟目录
@@ -43,7 +45,7 @@ export default defineUserConfig<DefaultThemeOptions>({
             link: '/interview/h5.md'
           },
           {
-            text: '浏览器基础知识点及常考',
+            text: '浏览器和网络知识点及常考',
             link: '/interview/browser.md'
           },
           {
@@ -102,7 +104,7 @@ export default defineUserConfig<DefaultThemeOptions>({
       {
         text: '自动化测试',
         children: [
-          { text: 'Vue应用测试', link: '/test/vueTest' }
+          { text: 'Vue应用测试', link: '/test/vueTest.md' }
         ]
       },
       {
@@ -132,6 +134,11 @@ export default defineUserConfig<DefaultThemeOptions>({
         ]
       }
     ],
+    sidebar: {
+      '/webpack/webpack/': [webpackSidebar],
+      '/vueAnalysis/': vueAnalysisSidebar,
+      '/vueNextAnalysis/': vueNextAnalysisSidebar
+    }
   },
   plugins: [
     [

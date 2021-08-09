@@ -83,9 +83,14 @@ dom.dispatchEvent(eve) // 触发事件
 同源策略是指，一个源的客户端脚本在没有明确授权的情况下，不能访问另一个源的客户端脚本。当一个URL和另一个URL，只要**协议**、**域名**或者**端口号**有一个不同，则就会出现跨域。
 解决跨域常用方法有：
 1. JSONP
-2. CORS
-3. document.domain
-4. postMessage
+2. 跨域资源共享（CORS）
+3. nginx代理跨域
+4. nodejs中间件代理跨域
+5. WebSocket协议跨域
+6. postMessage
+7. document.domain + iframe跨域
+8. location.hash + iframe
+9. window.name + iframe跨域
 :::
 
 #### JSONP实现跨域
@@ -143,7 +148,11 @@ document.domain = 'test.com'
 
 #### postMessage
 ::: tip
-`postMessage`一般用于获取嵌套在页面中的第三方页面的数据，一个页面发送请求，另外一个页面判断来源并接受请求。
+`postMessage`
+1. 页面和其打开的新窗口的数据传递
+2. 多窗口之间消息传递
+3. 页面与嵌套的iframe消息传递
+4. 上面三个场景的跨域数据传递
 :::
 ```html
 <body>
@@ -162,6 +171,37 @@ window.addEventListener('message',function(e){
 window.addEventListener('message',function(e){
   window.parent.postMessage('red','*');
 },false);
+```
+ #### nginx代理跨域
+1. **nginx配置解决iconfont跨域**
+
+浏览器跨域访问js、css、img等常规静态资源被同源策略许可，但iconfont字体文件(eot|otf|ttf|woff|svg)例外，此时可在nginx的静态资源服务器中加入以下配置。
+```js
+location / {
+  add_header Access-Control-Allow-Origin *;
+}
+```
+2. **nginx反向代理接口跨域**
+
+跨域原理： 同源策略是浏览器的安全策略，不是HTTP协议的一部分。服务器端调用HTTP接口只是使用HTTP协议，不会执行JS脚本，不需要同源策略，也就不存在跨越问题。
+
+实现思路：通过nginx配置一个代理服务器（域名与domain1相同，端口不同）做跳板机，反向代理访问domain2接口，并且可以顺便修改cookie中domain信息，方便当前域cookie写入，实现跨域登录。
+```
+#proxy服务器
+server {
+    listen       81;
+    server_name  www.domain1.com;
+
+    location / {
+        proxy_pass   http://www.domain2.com:8080;  #反向代理
+        proxy_cookie_domain www.domain2.com www.domain1.com; #修改cookie里域名
+        index  index.html index.htm;
+
+        # 当用webpack-dev-server等中间件代理接口访问nignx时，此时无浏览器参与，故没有同源限制，下面的跨域配置可不启用
+        add_header Access-Control-Allow-Origin http://www.domain1.com;  #当前端只跨域不带cookie时，可为*
+        add_header Access-Control-Allow-Credentials true;
+    }
+}
 ```
 
 ### 浏览器存储
@@ -246,13 +286,26 @@ if('serviceWorker' in navigator) {
 ::: tip
 通常来说，浏览器缓存策略分为两种：**强缓存**和**协商缓存**，缓存策略可通过HTTP Header来实现。
 :::
-
-**强缓存：** 强缓存可以通过设置`Expires`和`Cache-Control`来实现，强缓存表示在缓存期间，不需要请求，`State Code`为200，`Cache-Control`可以组合使用多个指令，常见指令如下所示：
-
+**强缓存：** 强缓存可以通过设置`Expires`和`Cache-Control`来实现，强缓存表示在缓存期间，不需要请求，`State Code`为200，并且Size显示from disk cache或from memory cach, `Cache-Control`可以组合使用多个指令，常见指令如下所示：
 ![缓存指令](../assets/images/interview/7.png)
 
-**协商缓存：** 协商缓存表示如果缓存过期了，那么就需要重新发起请求验证资源是否有更新，可通过设置HTTP Header的`Last-Modified`和`ETag`来实现，如果资源没有改变，`State Code`为304
+**Expires：** 缓存过期时间，用来指定资源到期的时间，是服务器端的具体的时间点，HTTP/1 的产物，受限于本地时间，如果修改了本地时间，可能会造成缓存失效。Expires: Wed, 22 Oct 2018 08:41:00 GMT表示资源会在 Wed, 22 Oct 2018 08:41:00 GMT 后过期，需要再次请求。
 
+**Cache-Control：** `Cache-Control:max-age=300` max-age代表相对时间，不管服务端客户端时间是否一致，以客户端为主，拿个这个请求300m之内不会再次请求服务器了。
+
+**协商缓存：** 协商缓存就是强制缓存失效后，浏览器携带缓存标识向服务器发起请求验证资源是否有更新，可通过设置HTTP Header的`Last-Modified`和`ETag`来实现，如果资源没有改变，`State Code`为304
+
+**Last-Modified(上次修改时间)和If-Modified-Since**
+浏览器在第一次访问资源时，服务器返回资源的同时，在response header中添加 Last-Modified的header，值是这个资源在服务器上的最后修改时间，浏览器接收后缓存文件和header；
+浏览器下一次请求这个资源，浏览器检测到有 Last-Modified这个header，于是添加If-Modified-Since这个header，值就是Last-Modified中的值；服务器再次收到这个资源请求，会根据 If-Modified-Since 中的值与服务器中这个资源的最后修改时间对比，如果没有变化，返回304和空的响应体，直接从缓存读取，如果If-Modified-Since的时间小于服务器中这个资源的最后修改时间，说明文件有更新，于是返回新的资源文件和200
+
+**但是 Last-Modified 存在一些弊端：**
+
+1. 如果本地打开缓存文件，即使没有对文件进行修改，但还是会造成 Last-Modified 被修改，服务端不能命中缓存导致发送相同的资源
+2. 因为 Last-Modified 只能以秒计时，如果在不可感知的时间内修改完成文件，那么服务端会认为资源还是命中了，不会返回正确的资源
+
+既然根据文件修改时间来决定是否缓存尚有不足，能否可以直接根据文件内容是否修改来决定缓存策略？所以在 HTTP / 1.1 出现了ETag和If-None-Match
+**Etag:** 是服务器响应请求时，返回当前资源文件的一个唯一标识(由服务器生成)，只要资源有变化，Etag就会重新生成(相当于哈希值)。
 ### 渲染原理
 
 #### DOM树
