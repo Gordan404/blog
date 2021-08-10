@@ -526,7 +526,59 @@ window.addEventListener('error', function(`errorMessage, scriptURI, lineNo, colu
 2. React 16.x 版本中引入了 `Error Boundary`
 3. `sourceMap`解析
 4. funbug 或者 bad.js等第三方库
+### 如何监控网页崩溃？
+强烈建议阅读[如何监控网页崩溃](https://zhuanlan.zhihu.com/p/40273861)
 
+网页都崩溃了，页面看不见了，JS 都不运行了，还有什么办法可以监控网页的崩溃，并将网页崩溃上报呢
+
+**一、利用`load` 与 `beforeunload`,页面崩溃无法触发 `beforeunload` 事件**
+```js
+window.addEventListener('load', function () {
+    sessionStorage.setItem('good_exit', 'pending');
+    setInterval(function () {
+        sessionStorage.setItem('time_before_crash', new Date().toString());
+    }, 1000);
+  });
+
+  window.addEventListener('beforeunload', function () {
+    sessionStorage.setItem('good_exit', 'true');
+  });
+
+  if(sessionStorage.getItem('good_exit') &&
+    sessionStorage.getItem('good_exit') !== 'true') {
+    /*
+        insert crash logging code here
+    */
+    alert('Hey, welcome back from your crash, looks like you crashed on: ' + sessionStorage.getItem('time_before_crash'));
+  }
+```
+**二、基于`Service Worker` 的崩溃统计方案**
+
+1. Service Worker 有自己独立的工作线程，与网页区分开，网页崩溃了，Service Worker 一般情况下不会崩溃；
+2. Service Worker 生命周期一般要比网页还要长，可以用来监控网页的状态；
+3. 网页可以通过 navigator.serviceWorker.controller.postMessage API 向掌管自己的 SW 发送消息(心跳检测)。
+```js
+// 页面 JavaScript 代码
+if (navigator.serviceWorker.controller !== null) {
+  let HEARTBEAT_INTERVAL = 5 * 1000; // 每五秒发一次心跳
+  let sessionId = uuid();
+  let heartbeat = function () {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'heartbeat',
+      id: sessionId,
+      data: {} // 附加信息，如果页面 crash，上报的附加数据
+    });
+  }
+  window.addEventListener("beforeunload", function() {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'unload',
+      id: sessionId
+    });
+  });
+  setInterval(heartbeat, HEARTBEAT_INTERVAL);
+  heartbeat();
+}
+```
 #### 上报错误信息
 1. 采用Ajax通信方式上报
 2. 利用newImage上报信息(代码简单，不需要第三方库, 可跨域，不需要接受会调响应)
@@ -550,15 +602,18 @@ window.addEventListener('error', function(`errorMessage, scriptURI, lineNo, colu
 <a href="http://www.baidu.com"></a>
 ```
 4. 利用浏览器缓存→缓存分类(强缓存、协商缓存)→缓存原理
-5. `Service Worker`，Service Worker的目的在于离线缓存，转发请求和网络代理。
-6. `Web Worker` 的作用，就是为 JavaScript 创造多线程环境，允许主线程创建 Worker 线程，将一些任务分配给后者运行
+5. `Web Worker` 的作用，就是为 JavaScript 创造多线程环境，允许主线程创建 Worker 线程，将一些任务分配给后者运行
 ```js
 var worker = new Worker('work.js');
 worker.postMessage('Hello World');
 worker.postMessage({method: 'echo', args: \['Work'\]});
+Service Worker 有自己独立的工作线程，与网页区分开，网页崩溃了，Service Worker 一般情况下不会崩溃；
 ```
+6. `Service Worker`，Service Worker的目的在于离线缓存，转发请求和网络代理。Service Worker 是在 Web Worker 的基础上加上了持久离线缓存能力
 ``` js
-// 借助webpack插件WorkboxWebpackPlugin和ManifestPlugin,加载serviceWorker.js,通过serviceWorker.register()注册
+// 1. Service Worker 有自己独立的工作线程，与网页区分开，网页崩溃了，Service Worker 一般情况下不会崩溃,生命周期一般要比网页还要长，可以用来监控网页(心跳检测)的状态；
+  navigator.serviceWorker.controller.postMessage()
+// 2.借助webpack插件WorkboxWebpackPlugin和ManifestPlugin,加载serviceWorker.js,通过serviceWorker.register()注册
 // Service Worker实际上是浏览器和服务器之间的代理服务器，它最大的特点是在页面中注册并安装成功后，运行于浏览器后台，不受页面刷新的影响，可以监听和截拦作用域范围内所有页面的 HTTP 请求。
 new WorkboxWebpackPlugin.GenerateSW({
     clientsClaim: true,
@@ -608,6 +663,7 @@ const url = `https://www.gordanlee.com/image/log.png?x-oss-process=image/format,
  2. content-visibility: auto; // content-visibility可以实现可见网页只加载可见区域内容，使网页的渲染性能得到数倍(四倍)的提升。
 ```
 ## HTTP相关面试题
+
 ### TCP和UDP
 
 ### HTTP组成及TLS
