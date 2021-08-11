@@ -49,6 +49,10 @@ export default defineUserConfig<DefaultThemeOptions>({
             link: '/interview/browser.md'
           },
           {
+            text: 'VUE知识点及常考',
+            link: '/interview/vue.md'
+          },
+          {
             text: 'JavaScript基础知识',
             link: '/interview/javascript.md'
           },
