@@ -453,6 +453,7 @@ if(a==1 && a==2 && a==3) {
 3. `call()`、`apply()`和`bind()`改变上下文的方法，`this`指向取决于这些方法的第一个参数，当第一个参数为`null`时，`this`指向全局对象`window`
 4. 箭头函数没有`this`，箭头函数里面的`this`只取决于包裹箭头函数的第一个普通函数的`this`
 5. `new`构造函数调用，`this`永远指向构造函数返回的实例上，优先级最高。
+6. 在严格模式下，这种函数中的`this`等于`undefined`, `class` 中默认严格模式。
 ```js
 var name = 'global name';
 var foo = function() {
@@ -481,6 +482,29 @@ obj.foo.apply(obj1);
 // new 构造函数调用，输出：p1 name
 var p1 = new Person('p1 name');
 p1.getName();
+
+// 严格模式中
+"use strict";
+console.log("在对象的函数中的this", this); // Window
+var o = new Object();
+o.a = 'o.a';
+o.say = function(){
+  return this.a;
+}
+console.log(o.say()); // undefined
+// class中默认严格模式
+class A {
+  constructor() {
+    this.name = 123;
+  }
+  getA() { 
+    console.log(this);
+    return this.name + 1; 
+  }
+}
+let a = new A();
+let funcA = a.getA; // undefined
+funcA();
 ```
 
 #### this解析流程图
@@ -1250,7 +1274,12 @@ window.requestAnimationFrame(render);
 1. 宏任务(`script`、`setTimeout`、`setInterval`、`setImmidiate`、`I/O`、`UI Rendering`)可以有多个队列
 2. 微任务(`procress.nextTick`、`Promise.then`、`Object.observe`、`mutataionObserver`)只能有一个队列
 
-**执行顺序：** 当执行栈执行完毕后，会首先执行微任务队列，当微任务队列执行完毕再从宏任务中读取并执行，当再次遇到微任务时，放入微任务队列。
+**执行顺序：**
+* 首先执行同步代码，这属于宏任务
+* 当执行完所有同步代码后，执行栈为空，查询是否有异步代码需要执行
+* 执行所有微任务
+* 当执行完所有微任务后，如有必要会渲染页面
+* 然后开始下一轮 Event Loop，执行宏任务中的异步代码，也就是 setTimeout 中的回调函数
 ```js
 setTimeout(() => {
   console.log(1);
