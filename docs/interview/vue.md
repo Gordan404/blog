@@ -148,6 +148,7 @@ export default {
 * Event Bus: $on不会自己销毁，需要我们手动给销毁，否则会重复触发,甚至造成内存泄漏，在keep-alive中尤为明显。
 :::
 ### 组件生命周期
+![VUE](../assets/images/interview/21.png)
 :::tip
 * beforeCreate 在实例初始化之后，数据观测(data observer) 和 event/watcher 事件配置之前被调用。在当前阶段 data、methods、computed 以及 watch 上的数据和方法都不能被访问
 * created 实例已经创建完成之后被调用。在这一步，实例已完成以下的配置：数据观测(data observer)，属性和方法的运算， watch/event 事件回调。这里没有$el,如果非要想与 Dom 进行交互，可以通过 vm.$nextTick 来访问 Dom
