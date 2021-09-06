@@ -173,6 +173,99 @@ export default {
 * 销毁过程
 父beforeDestroy->子beforeDestroy->子destroyed->父destroyed
 :::
+### keep-alive 使用场景和原理
+建议阅读有关[keep-alive源码](https://www.jianshu.com/p/9523bb439950)
+:::tip
+keep-alive 是 Vue 内置的一个组件，可以实现组件缓存，当组件切换时不会对当前组件进行卸载。
+* 常用的两个属性 include/exclude/max，允许组件有条件的进行缓存。
+* 两个生命周期 activated/deactivated，用来得知当前组件是否处于活跃状态。
+* keep-alive 的中还运用了 LRU(最近最少使用) 算法，选择最近最久未使用的组件予以淘汰。
+1. 在首次加载被包裹组建时，由keep-alive.js中的render函数可知，vnode.componentInstance的值是undfined，keepAlive的值是true，因为keep-alive组件作为父组件，它的render函数会先于被包裹组件执行；那么只执行到i(vnode,false)，后面的逻辑不执行；
+2. 再次访问被包裹组件时，vnode.componentInstance的值就是已经缓存的组件实例，那么会执行insert(parentElm, vnode.elm, refElm)逻辑，这样就直接把上一次的DOM插入到父元素中。
+:::
+```js
+// 大白话就是将render 返回的Vnode存储下来了，当命中的时候再取出来通过render返回
+export default {
+  name: "keep-alive",
+  abstract: true, //抽象组件
+
+  props: {
+    include: patternTypes, //要缓存的组件
+    exclude: patternTypes, //要排除的组件
+    max: [String, Number], //最大缓存数
+  },
+
+  created() {
+    this.cache = Object.create(null); //缓存对象  {a:vNode,b:vNode}
+    this.keys = []; //缓存组件的key集合 [a,b]
+  },
+
+  destroyed() {
+    for (const key in this.cache) {
+      pruneCacheEntry(this.cache, key, this.keys);
+    }
+  },
+
+  mounted() {
+    //动态监听include  exclude
+    this.$watch("include", (val) => {
+      pruneCache(this, (name) => matches(val, name));
+    });
+    this.$watch("exclude", (val) => {
+      pruneCache(this, (name) => !matches(val, name));
+    });
+  },
+
+  render() {
+    const slot = this.$slots.default; //获取包裹的插槽默认值
+    const vnode: VNode = getFirstComponentChild(slot); //获取第一个子组件
+    const componentOptions: ?VNodeComponentOptions =
+      vnode && vnode.componentOptions;
+    if (componentOptions) {
+      // check pattern
+      const name: ?string = getComponentName(componentOptions);
+      const { include, exclude } = this;
+      // 不走缓存
+      if (
+        // not included  不包含
+        (include && (!name || !matches(include, name))) ||
+        // excluded  排除里面
+        (exclude && name && matches(exclude, name))
+      ) {
+        //返回虚拟节点
+        return vnode;
+      }
+
+      const { cache, keys } = this;
+      const key: ?string =
+        vnode.key == null
+          ? // same constructor may get registered as different local components
+            // so cid alone is not enough (#3269)
+            componentOptions.Ctor.cid +
+            (componentOptions.tag ? `::${componentOptions.tag}` : "")
+          : vnode.key;
+      if (cache[key]) {
+        //通过key 找到缓存 获取实例
+        vnode.componentInstance = cache[key].componentInstance;
+        // make current key freshest
+        remove(keys, key); //通过LRU算法把数组里面的key删掉
+        keys.push(key); //把它放在数组末尾
+      } else {
+        cache[key] = vnode; //没找到就换存下来
+        keys.push(key); //把它放在数组末尾
+        // prune oldest entry  //如果超过最大值就把数组第0项删掉
+        if (this.max && keys.length > parseInt(this.max)) {
+          pruneCacheEntry(cache, keys[0], keys, this._vnode);
+        }
+      }
+
+      vnode.data.keepAlive = true; //标记虚拟节点已经被缓存
+    }
+    // 返回虚拟节点
+    return vnode || (slot && slot[0]);
+  },
+}
+```
 ### $nextTick 原理和使用场景
 建议阅读有关[nextTick源码](https://juejin.cn/post/6939704519668432910#heading-4)
 :::tip
@@ -230,5 +323,64 @@ export function nextTick(cb) {
     pending = true;
     timerFunc();
   }
+}
+```
+### Vue.mixin 的使用场景和原理
+:::tip
+在日常的开发中，我们经常会遇到在不同的组件中经常会需要用到一些相同或者相似的代码，这些代码的功能相对独立，可以通过 Vue 的 mixin 功能抽离公共的业务逻辑，原理类似“对象的继承”，当组件初始化时会调用 mergeOptions 方法进行合并，采用策略模式针对不同的属性进行合并。当组件和混入对象含有同名选项时，这些选项将以恰当的方式进行“合并”。
+* 缺点： 
+1. 变量来源不明确，不利于阅读（只能靠全局搜索）
+2. 多mixin可能会造成命名冲突
+3. mixin和组件可能出现多对多的关系，复杂度较高
+Vue3推出 Compostion Api 去解决这些问题
+:::
+```js
+export default function initMixin(Vue){
+  Vue.mixin = function (mixin) {
+    //   合并对象
+      this.options=mergeOptions(this.options,mixin)
+  };
+}
+};
+
+// src/util/index.js
+// 定义生命周期
+export const LIFECYCLE_HOOKS = [
+  "beforeCreate",
+  "created",
+  "beforeMount",
+  "mounted",
+  "beforeUpdate",
+  "updated",
+  "beforeDestroy",
+  "destroyed",
+];
+
+// 合并策略
+const strats = {};
+// mixin核心方法
+export function mergeOptions(parent, child) {
+  const options = {};
+  // 遍历父亲
+  for (let k in parent) {
+    mergeFiled(k);
+  }
+  // 父亲没有 儿子有
+  for (let k in child) {
+    if (!parent.hasOwnProperty(k)) {
+      mergeFiled(k);
+    }
+  }
+
+  //真正合并字段方法
+  function mergeFiled(k) {
+    if (strats[k]) {
+      options[k] = strats[k](parent[k], child[k]);
+    } else {
+      // 默认策略
+      options[k] = child[k] ? child[k] : parent[k];
+    }
+  }
+  return options;
 }
 ```
