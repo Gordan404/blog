@@ -7,6 +7,40 @@ sidebar: auto
 
 强烈建议阅读[Vue源码分析](/vueAnalysis/introduction/)
 
+###  MVC 和 MVVM 区别
+#### 背景及概念
+:::tip
+* 第一阶段，直接用JavaScript操作DOM节点，使用浏览器提供的原生API
+* 第二阶段，由于原生API不好用，还要考虑浏览器兼容性，jQuery的出现风靡一时
+* 第三阶段，MVC模式，需要服务器端配合，JavaScript可以在前端修改服务器渲染后的数据。
+* 第四阶段，随着前端页面越来越复杂，用户对于交互性要求也越来越高，仅仅用jQuery是远远不够的，MVVM模型应运而生
+:::
+![MVC](../assets/images/interview/23.png)
+#### MVC
+:::tip
+MVC 全名是 Model View Controller，是模型(model)－视图(view)－控制器(controller)的缩写，一种软件设计典范(例如:JSP、asp、php)
+* Model（模型）：是应用程序中用于处理应用程序数据逻辑的部分。通常模型对象负责在数据库中存取数据
+* View（视图）：是应用程序中处理数据显示的部分。通常视图是依据模型数据创建的
+* Controller（控制器）：是应用程序中处理用户交互的部分。通常控制器负责从视图读取数据，控制用户输入，并向模型发送数据
+
+**MVC 的思想**：一句话描述就是 Controller 负责将 Model 的数据用 View 显示出来，换句话说就是在 Controller 里面把 Model 的数据赋值给 View。缺点:如果需要更新视图还需要依赖手动操作DOM，如实用JQ。
+:::
+#### MVVM
+![MVVM](../assets/images/interview/24.jpeg)
+:::tip
+* 是指数据层（Model）-视图层（View）-数据视图（ViewModel）的响应式框架。它包括
+1. 修改View层，Model对应数据发生变化
+2. Model数据变化，不需要查找DOM，直接更新View
+* MVVM 与 MVC 最大的区别就是：它实现了 View 和 Model 的自动同步，也就是当 Model 的属性改变时，我们不用再自己手动操作 Dom 元素，来改变 View 的显示，而是改变属性后该属性对应 View 层显示会自动改变（对应Vue数据驱动的思想）
+整体看来，MVVM 比 MVC 精简很多，不仅简化了业务与界面的依赖，还解决了数据频繁更新的问题，不用再用选择器操作 DOM 元素。因为在 MVVM 中，View 不知道 Model 的存在，Model 和 ViewModel 也观察不到 View，这种低耦合模式提高代码的可重用性
+:::
+![MVVM](../assets/images/interview/25.png)
+:::tip
+注意：Vue 并没有完全遵循 MVVM 的思想 这一点官网自己也有说明
+那么问题来了 为什么官方要说 Vue 没有完全遵循 MVVM 思想呢？
+* 严格的 MVVM 要求 View 不能和 Model 直接通信，而 Vue 提供了$refs 这个属性，让 Model 可以直接操作 View，违反了这一规定，所以说 Vue 没有完全遵循 MVVM。
+:::
+
 ### 为什么 data 是一个函数
 :::tip
 组件中的 data 写成一个函数，数据以函数返回值形式定义，这样每复用一次组件，就会返回一份新的对象的独立拷贝data，类似于给每个组件实例创建一个私有的数据空间，让各个组件实例维护各自的数据。而单纯的写成对象形式，就使得所有组件实例共用了一份 data，就会造成一个变了全都会变的结果，跟JS的引用类型相关，而非Vue.
@@ -344,6 +378,11 @@ export default function initMixin(Vue){
 
 // src/util/index.js
 // 定义生命周期
+created
+beforecreated
+mounted
+upated
+destroy
 export const LIFECYCLE_HOOKS = [
   "beforeCreate",
   "created",
@@ -381,5 +420,130 @@ export function mergeOptions(parent, child) {
     }
   }
   return options;
+}
+```
+### Vue.extend 作用和原理
+建议阅读有关[组件原理](https://juejin.cn/post/6954173708344770591)
+:::tip
+官方解释：Vue.extend 使用基础 Vue 构造器，创建一个“子类”,参数是一个包含组件选项的对象。
+其实就是一个子类构造器 是 Vue 组件的核心 api 实现思路就是使用原型继承的方法返回了 Vue 的子类 并且利用mergeOptions 把传入组件的 options 和父类的 options 进行了合并,最终还是要通过Vue.components注册才可以使用。(例如实现一个全局提示组件)
+:::
+```js
+export default function initExtend(Vue) {
+  let cid = 0; //组件的唯一标识
+  // 创建子类继承Vue父类 便于属性扩展
+  Vue.extend = function (extendOptions) {
+    // 创建子类的构造函数 并且调用初始化方法
+    const Sub = function VueComponent(options) {
+      this._init(options); //调用Vue初始化方法
+    };
+    Sub.cid = cid++;
+    Sub.prototype = Object.create(this.prototype); // 子类原型指向父类
+    Sub.prototype.constructor = Sub; //constructor指向自己
+    Sub.options = mergeOptions(this.options, extendOptions); //合并自己的options和父类的options
+    return Sub;
+  };
+}
+```
+### Vue自定义指令作用和原理
+:::tip
+指令本质上是装饰器，是 vue 对 HTML 元素的扩展，给 HTML 元素增加自定义功能。vue 编译 DOM 时，会找到指令对象，执行指令的相关方法。(例如:v-html、v-transfer-dom实现dom挂载指定节点、v-copy实现复制、实现按钮权限控制或者点击特效)
+自定义指令有五个生命周期
+1. `bind`：只调用一次，指令第一次绑定到元素时调用。在这里可以进行一次性的初始化设置。
+2. `inserted`：被绑定元素插入父节点时调用 (仅保证父节点存在，但不一定已被插入文档中)。
+3. `update`：被绑定于元素所在的模板更新时调用，而无论绑定值是否变化。通过比较更新前后的绑定值，可以忽略不必要的模板更新。
+4. `componentUpdated`：被绑定元素所在模板完成一次更新周期时调用。
+5. `unbind`：只调用一次，指令与元素解绑时调用。
+:::
+* 原理
+1. 在生成 ast 语法树时，遇到指令会给当前元素添加 directives 属性
+2. 通过 genDirectives 生成指令代码
+3. 在 patch 前将指令的钩子提取到 cbs 中,在 patch 过程中调用对应的钩子
+4. 当执行指令对应钩子函数时，调用对应指令定义的方法
+
+### VUEX
+![VUE](../assets/images/interview/22.png)
+:::tip
+vuex 是专门为 vue 提供的全局状态管理系统，用于多个组件中数据共享、数据缓存等。（无法持久化、内部核心原理是通过创造一个全局实例 new Vue）
+State：定义了应用状态的数据结构，可以在这里设置默认的初始状态。
+Getter：允许组件从 Store 中获取数据，mapGetters 辅助函数仅仅是将 store 中的 getter 映射到局部计算属性。
+Mutation：是唯一更改 store 中状态的方法，他是一个原子操作，原子最小，且必须是同步函数。
+Action：用于提交 mutation，而不是直接变更状态，可以包含任意异步或者整合多个Mutation操作。
+Module：允许将单一的 Store 拆分为多个 store 且同时保存在单一的状态树中。
+:::
+```js
+export default new Vuex.Store({
+  state: {
+    userInfo: [],
+  },
+  mutations: {
+    SET_USER_INFO(state, userInfo) {
+      state.userInfo = userInfo
+    },
+  },
+  actions: {
+    getInfo({ commit, state }) {
+      return new Promise((resolve, reject) => {
+        getInfo().then(async response => {
+          commit('SET_USER_INFO', response)
+          resolve(response)
+        }).catch(error => {
+          reject(error)
+        })
+      })
+    },
+  },
+  modules: {},
+})
+
+this.$store.commit('SET_USER_INFO', {}) // 同步
+store.dispatch('getInfo').then(() => {}) // 异步
+```
+### vue-router 路由模式有几种？
+vue-router 有 3 种路由模式：`hash`、`history`、`abstract`，对应的源码如下所示：
+```js
+switch (mode) {
+  case 'history':
+    this.history = new HTML5History(this, options.base)
+    break
+  case 'hash':
+    this.history = new HashHistory(this, options.base, this.fallback)
+    break
+  // 适用于所有JavaScript环境，例如服务器端和Node.js. 如果没有浏览器API，路由器将自动强制进入此模式。
+  case 'abstract': 
+    this.history = new AbstractHistory(this, options.base)
+    break
+  default:
+    if (process.env.NODE_ENV !== 'production') {
+      assert(false, `invalid mode: ${mode}`)
+    }
+}
+```
+#### hash 模式
+:::tip
+1.就是指 url 尾巴后的 # 号以及后面的字符, 请求的时候不会被包含在 http 请求中 只会携带#之前的，所以每次改变hash不会重新请求加载页面
+2.hash 改变会触发 hashchange 事件,能兼容到ie8。
+3.hash变化会被浏览器记录，浏览器的前进和后退都能用。
+:::
+```
+window.addEventListener("hashchange", funcRef, false);
+```
+#### history 模式
+:::tip
+利用了 HTML5 History Interface 中新增的 pushState() 和 replaceState() 方法。这两个 API 可以在不进行刷新的情况下，操作浏览器的历史纪录。唯一不同的是，前者是新增一个历史记录，后者是直接替换当前的历史记录,`history`只能兼容到 `IE10`,需要额外的Nginx配置，否则刷新后会404
+:::
+```js
+window.history.pushState(state, title, url);
+window.history.replaceState(state, title, url));
+window.addEventListener("popstate", ()=>{});
+window.history.back(); // 后退
+window.history.forward(); // 前进
+window.history.go(-3);  // 后退三个页面
+// Nginx配置 无论写任何path都会返回index.html，
+location / {
+  try_files $uri $uri/ /index.html;
+  root /data/files/dist/;
+  index index.html;
+  add_header Access-Control-Allow-Origin *;
 }
 ```
