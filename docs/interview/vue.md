@@ -40,7 +40,172 @@ MVC 全名是 Model View Controller，是模型(model)－视图(view)－控制�
 那么问题来了 为什么官方要说 Vue 没有完全遵循 MVVM 思想呢？
 * 严格的 MVVM 要求 View 不能和 Model 直接通信，而 Vue 提供了$refs 这个属性，让 Model 可以直接操作 View，违反了这一规定，所以说 Vue 没有完全遵循 MVVM。
 :::
+### Vue2.0 响应式数据的原理
+:::tip 简版
+整体思路是数据劫持+观察者模式
+* 用`observe`方法对象进行递归遍历至基本数据类型,包括子属性对象的属性，都加上 setter和getter
+这样的话,对象内部通过 `defineReactive` 方法，使用 `Object.defineProperty` 将属性进行劫持（只会劫持已经存在的属性），数组则是通过重写数组方法来实现。当页面使用对应属性时，每个属性都拥有自己的 `dep` 属性，存放他所依赖的 `watcher`（依赖收集），当属性变化后会通知自己对应的 `watcher` 去更新(派发更新)。
+:::
+:::tip 完整版
+vue.js 是采用数据劫持结合发布者-订阅者模式的方式，通过Object.defineProperty()来劫持各个属性的setter，getter，在数据变动时发布消息给订阅者，触发相应的监听回调。
+* 第一步：需要observe方法将数据对象进行递归遍历，包括子属性对象的属性，使用 `Object.defineProperty` 都加上 setter和getter这样的话，给这个对象的某个值赋值，就会触发setter，那么就能监听到了数据变化
+* 第二步：compile解析模板指令，将模板中的变量替换成数据，然后初始化渲染页面视图，并将每个指令对应的节点绑定更新函数，添加监听数据的订阅者,一旦数据有变动，收到通知，更新视图
+* 第三步：Watcher订阅者是Observer和Compile之间通信的桥梁，主要做的事情是:
+1. 在自身实例化时往属性订阅器(dep)里面添加自己
+2. 自身必须有一个update()方法
+3. 待属性变动dep.notice()通知时，能调用自身的update()方法，并触发Compile中绑定的回调，则功成身退。
+* 第四步：MVVM作为数据绑定的入口，整合Observer、Compile和Watcher三者，通过Observer来监听自己的model数据变化，通过Compile来解析编译模板指令，最终利用Watcher搭起Observer和Compile之间的通信桥梁，达到数据变化 -> 视图更新；视图交互变化(input) -> 数据model变更的双向绑定效果。
+:::
 
+```js
+// 简易版和源码略有差异
+  // 监听对象的属性
+  const oldArrayProto = Array.prototype;
+  // 然后将arrayMethods继承自数组原型
+  // 这里是面向切片编程思想（AOP）--不破坏封装的前提下，动态的扩展功能
+  const arrayMethods = Object.create(oldArrayProto);
+  let methodNames = [
+    "push",     // 末尾添加
+    "pop",      // 删除添加
+    "shift",    // 开口删除
+    "unshift",  // 开头添加
+    "splice",   // 添加或删除
+    "reverse",  // 反转
+    "sort",     // 排序
+  ];
+  methodNames.forEach((method)=>{ // 重写数组方法
+    arrayMethods[method]= function() {
+      updateView(); // 触发视图更新
+      oldArrayProto[method].call(this, ...arguments)
+    }
+  })
+  //
+  function observer(target) {
+    if(typeof target !== 'object' || target === null) {
+      // 不是对象或者数组
+      return target
+    }
+    if(Array.isArray(target)) { // 如果是数组特殊 处理
+      target.__proto__ = arrayMethods; // 修改原型指向
+    }
+    Object.keys(target).forEach((key) => {
+      defineReactive(target, key, target[key]);
+    });
+  }
+  function defineReactive (obj, key, val) {
+    observer(val) // 实现深度监听
+    // Object.defineProperty(arr, index, { // 可监听到下标改变，监听不到push、length等原方法属性
+    Object.defineProperty(obj, key, {
+      enumerable: true,  /* 属性可枚举 */
+      configurable: true,/* 属性可被修改或删除 */
+      get: function reactiveGetter () {
+        console.log('__get:', val)
+        return val; 
+      },
+      set: function reactiveSetter (newVal) {
+        console.log('__set:', `${val}=>${newVal}`)
+        if (newVal === val) return; //值不变才调用更新
+        //深度监听,如果set修改值不再次调用observer监听，当把 data.age = 1 => data.age = { num: 1}改变数据类型,就永远无法监听到num。
+        observer(newVal)
+        // val是在闭包中的，此处设置完之后，再get也是会获取最新的值
+        val = newVal
+        updateView(newVal);
+      }
+    });
+  }
+  function updateView(params) { // 更新视图
+    console.log('视图更新:', params);
+  }
+  const data = {
+    name: 'goudanlee',
+    info: {
+      address: '曹县'
+    },
+    age: 17,
+    list: [1]
+  }
+  observer(data);
+  data.name = 'goudanlee2'
+  data.x = 100 // 新增属性监听不到所以有Vue.set
+  delete data.name // 删除属性监听不到所以有Vue.delete
+  data.info.address = '北京'
+  data.age = {
+    num: 21
+  }
+  data.age.num = 22
+  data.list[0] = 3 // 可监听到
+  data.list.push(1); // 通过重写数组方法才可监听到
+```
+### 使用`Object.defineProperty` 缺点
+:::tip
+* 深度监听，需要递归到底，如果源数据大且嵌套层级深、一次性计算量大。
+* 无法监听新增/删除属性(Vue.set/Vue.delete)
+* 可监听到数组下标改变，无法原生监听数组(push、pop、length)，需要特俗处理
+:::
+### Vue 如何检测数组变化
+:::tip
+`Object.defineProperty` 可监听到数组下标改变，无法原生监听数组(push、pop、length),考虑性能原因没有用 defineProperty 对数组的每一项进行拦截，而是选择对 7 种数组（push,shift,pop,splice,unshift,sort,reverse）方法进行重写(AOP 切片思想)
+所以在 Vue 中修改数组的索引和长度是无法监控到的。需要通过以上 7 种变异方法修改数组才会触发数组对应的 watcher 进行更新
+:::
+```js
+// src/obserber/array.js
+// 先保留数组原型
+const arrayProto = Array.prototype;
+// 然后将arrayMethods继承自数组原型
+// 这里是面向切片编程思想（AOP）--不破坏封装的前提下，动态的扩展功能
+export const arrayMethods = Object.create(arrayProto);
+let methodsToPatch = [
+  "push",
+  "pop",
+  "shift",
+  "unshift",
+  "splice",
+  "reverse",
+  "sort",
+];
+methodsToPatch.forEach((method) => {
+  arrayMethods[method] = function (...args) {
+    //   这里保留原型方法的执行结果
+    const result = arrayProto[method].apply(this, args);
+    // 这句话是关键
+    // this代表的就是数据本身 比如数据是{a:[1,2,3]} 那么我们使用a.push(4)  this就是a  ob就是a.__ob__ 这个属性就是上段代码增加的 代表的是该数据已经被响应式观察过了指向Observer实例
+    const ob = this.__ob__;
+
+    // 这里的标志就是代表数组有新增操作
+    let inserted;
+    switch (method) {
+      case "push":
+      case "unshift":
+        inserted = args;
+        break;
+      case "splice":
+        inserted = args.slice(2);
+      default:
+        break;
+    }
+    // 如果有新增的元素 inserted是一个数组 调用Observer实例的observeArray对数组每一项进行观测
+    if (inserted) ob.observeArray(inserted);
+    // 之后咱们还可以在这里检测到数组改变了之后从而触发视图更新的操作--后续源码会揭晓
+    return result;
+  };
+});
+```
+### 虚拟 DOM 优缺点
+:::tip
+由于在浏览器中操作 DOM 是很昂贵的。频繁的操作 DOM，会产生一定的性能问题。这就是虚拟 Dom 的产生原因。Vue2 的 Virtual DOM 借鉴了开源库 snabbdom 的实现。Virtual DOM 本质就是用一个原生的 JS 对象去描述一个 DOM 节点，是对真实 DOM 的一层抽象。
+:::
+![Virtual DOM](../assets/images/interview/27.png)
+```js
+vm.$createElement('div',{attrs: {id:'app'}}, '内容')
+React.createElement("h1", {className: "main"}, "内容或则子集");
+```
+* **优点：**
+1. 保证性能下限： 框架的虚拟 DOM 需要适配任何上层 API 可能产生的操作，它的一些 DOM 操作的实现必须是普适的，所以它的性能并不是最优的；但是比起粗暴的 DOM 操作性能要好很多，因此框架的虚拟 DOM 至少可以保证在你不需要手动优化的情况下，依然可以提供还不错的性能，结合diff算法，做到局部最小更新，即保证性能的下限；
+2. 无需手动操作 DOM： 我们不再需要手动去操作 DOM，只需要写好 View-Model 的代码逻辑，框架会根据虚拟 DOM 和 数据双向绑定，帮我们以可预期的方式更新视图，极大提高我们的开发效率；
+3. 跨平台： 虚拟 DOM 本质上是 JavaScript 对象,而 DOM 与平台强相关，相比之下虚拟 DOM 可以进行更方便地跨平台操作，例如服务器渲染、weex 开发等等。
+* **缺点:**
+1. 无法进行极致优化： 虽然虚拟 DOM + 合理的优化，足以应对绝大部分应用的性能需求，但在一些性能要求极高的应用中虚拟 DOM 无法进行针对性的极致优化。
+2. 首次渲染大量 DOM 时，由于多了一层虚拟 DOM 的计算，会比 innerHTML 插入慢。
 ### 为什么 data 是一个函数
 :::tip
 组件中的 data 写成一个函数，数据以函数返回值形式定义，这样每复用一次组件，就会返回一份新的对象的独立拷贝data，类似于给每个组件实例创建一个私有的数据空间，让各个组件实例维护各自的数据。而单纯的写成对象形式，就使得所有组件实例共用了一份 data，就会造成一个变了全都会变的结果，跟JS的引用类型相关，而非Vue.
@@ -104,7 +269,7 @@ const vm = {
 ```
 ### v-if 与 v-for 为什么不建议一起使用
 :::tip
-v-for 和 v-if 不要在同一个标签中使用,因为解析时先解析 v-for 优先级高于 v-if,这意味着 v-if 将分别重复运行于每个 v-for 循环中。如果遇到需要同时使用时可以考虑写成计算属性的方式。
+v-for 和 v-if 不要在同一个标签中使用,因为在vue2.0解析时先解析 v-for 优先级高于 v-if(vue3.0恰恰相反),这意味着 v-if 将分别重复运行于每个 v-for 循环中。如果遇到需要同时使用时可以考虑写成计算属性的方式。
 :::
 ### v-for 为什么要加 key
 :::tip
