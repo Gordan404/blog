@@ -196,16 +196,172 @@ methodsToPatch.forEach((method) => {
 :::
 ![Virtual DOM](../assets/images/interview/27.png)
 ```js
-vm.$createElement('div',{attrs: {id:'app'}}, '内容')
-React.createElement("h1", {className: "main"}, "内容或则子集");
+class VNode {
+    constructor (tag, data, children, text, elm) {
+        /*当前节点的标签名*/
+        this.tag = tag;
+        /*当前节点的一些数据信息，比如props、attrs等数据*/
+        this.data = data;
+        /*当前节点的子节点，是一个数组*/
+        this.children = children;
+        /*当前节点的文本*/
+        this.text = text;
+        /*当前虚拟节点对应的真实dom节点*/
+        this.elm = elm;
+    }
+}
+vm.$createElement('div',{attrs: {id:'app'}}, '内容' || children)
+React.createElement("h1", {className: "main"}, "内容" || children);
 ```
 * **优点：**
-1. 保证性能下限： 框架的虚拟 DOM 需要适配任何上层 API 可能产生的操作，它的一些 DOM 操作的实现必须是普适的，所以它的性能并不是最优的；但是比起粗暴的 DOM 操作性能要好很多，因此框架的虚拟 DOM 至少可以保证在你不需要手动优化的情况下，依然可以提供还不错的性能，结合diff算法，做到局部最小更新，即保证性能的下限；
+1. 保证性能下限：避免频繁操作DOM，频繁操作DOM会可能让浏览器回流和重绘，性能也会非常低，还有就是手动操作 DOM 还是比较麻烦的，要考虑浏览器兼容性问题，当前jQuery等库简化了 DOM操作，但是项目复杂了，DOM操作还是会变得复杂，虚拟DOM改变了当前的状态不需要立即的去更新DOM，过前后两次差异进行比较寻求最小或者局部更新，或者把多次合并成一次。
 2. 无需手动操作 DOM： 我们不再需要手动去操作 DOM，只需要写好 View-Model 的代码逻辑，框架会根据虚拟 DOM 和 数据双向绑定，帮我们以可预期的方式更新视图，极大提高我们的开发效率；
 3. 跨平台： 虚拟 DOM 本质上是 JavaScript 对象,而 DOM 与平台强相关，相比之下虚拟 DOM 可以进行更方便地跨平台操作，例如服务器渲染、weex 开发等等。
 * **缺点:**
 1. 无法进行极致优化： 虽然虚拟 DOM + 合理的优化，足以应对绝大部分应用的性能需求，但在一些性能要求极高的应用中虚拟 DOM 无法进行针对性的极致优化。
 2. 首次渲染大量 DOM 时，由于多了一层虚拟 DOM 的计算，会比 innerHTML 插入慢。
+### Vue diff 算法
+:::tip
+diff即对比，是一广泛的概念，如linux diff命令、git diff 等,两棵树做diff就如同vdom diff
+原本diff 复杂度 O (n^3) ，1000 个节点的树，要比对 10 亿次，性能消耗太大，算法不可用，vdom diff用了以下的方式优化后时间复杂度到 O (n) 级别。
+1. 只比较同一层级，不跨域级比较
+2. tag不相同，则直接删除重建，不再深度比较
+3. tag 和 key,两者都相同，则认为是相同节点，不再深度比较
+* 上面的方式可以说是偷懒或者比较暴力，但是对于dom非常合适，能解决80%的场景，且性能好。
+代码总结：按照上面规则 走`patch`方法做同级比较、 再用`sameVnode`方法判断是否继续走`patchVnode`方法，在`patchVnode`方法中`oldVnode.children`和`Vnode.children`都存在并且不同就调用`updateChildren`方法
+:::
+![VUE](../assets/images/interview/28.png)
+```js
+/**
+ * 把传入的 参数 作为 对象返回
+ * @param {string} sel 选择器
+ * @param {object} data 数据
+ * @param {array} children 子节点 children和text不会共存
+ * @param {string} text 文本
+ * @param {dom} elm DOM
+ * @returns object
+ */
+export default function (sel, data, children, text, elm) {
+  return { sel, data, children, text, elm }
+}
+// 第一次只有vnode,没有oldvnode会直接走 createElm()
+return {
+  sel, // 标签选择器
+  data, // 数据
+  children, // 是否有子元素 children和text不能共存
+  text, // 文本
+}
+
+```
+![patch](../assets/images/interview/28.png)
+* **写个基础的patch**
+```js
+import vnode from './vnode'
+// 导出 patch
+/**
+ * @param {vnode/DOM} oldVnode
+ * @param {vnode} newVnode
+ */
+export default function patch(oldVnode, newVnode) {
+  // 1.判断oldVnode 是否为虚拟 DOM 这里判断是否有 sel
+  if (!oldVnode.sel) {
+    // 转为虚拟DOM
+    // 给一个参数不是vnode,创建一个空的vnode,关联到这个DOM元素
+    oldVnode = emptyNodeAt(oldVnode)
+  }
+  // 判断 oldVnode 和 newVnode 是否为同一虚拟节点
+  // 通过 key 和 sel 进行判断
+  if (sameVnode(oldVnode, newVnode)) {
+    // 是同一个虚拟节点 调用我们写的 patchVnode.js 中的方法
+    // 走深度比对
+    patchVnode(oldVnode, vnode)
+    ...
+  } else {
+    // 不是同一虚拟个节点 直接暴力拆掉老节点，重建新的节点
+    const oEl = oldVnode.el // 当前oldVnode对应的真实元素节点
+    let parentEle = api.parentNode(oEl)  // 父元素
+    createEle(vnode)  // 根据Vnode生成新元素
+    if (parentEle !== null) {
+        api.insertBefore(parentEle, vnode.el, api.nextSibling(oEl)) // 将新元素添加进父元素
+        api.removeChild(parentEle, oldVnode.el)  // 移除以前的旧元素节点
+        oldVnode = null
+    }
+    ...
+  }
+  // 新的Vnode变成老的Vnode
+  // newVnode.elm = oldVnode.elm
+  // 返回newVnode作为 旧的虚拟节点
+  return newVnode
+}
+// 判断两节点是否值得深度比较，值得比较则执行patchVnode
+function sameVnode (a, b) {
+  // 都不传key,key === undefiend // true,就会走后面的判断
+  return (
+    a.key === b.key &&  // key值
+    a.tag === b.tag &&  // 标签名
+    a.isComment === b.isComment &&  // 是否为注释节点
+    // 是否都定义了data，data包含一些具体信息，例如onclick , style
+    isDef(a.data) === isDef(b.data) &&  
+    sameInputType(a, b) // 当标签是<input>的时候，type必须相同
+  )
+}
+/**
+ * 转为 虚拟 DOM
+ * @param {DOM} elm DOM节点
+ * @returns {object}
+ */
+function emptyNodeAt(elm) {
+  // 把 sel 和 elm 传入 vnode 并返回
+  // 这里主要选择器给转小写返回vnode
+  // 这里功能做的简陋，没有去解析 # .
+  // data 也可以传 ID 和 class
+  // 会把vnode和真实的dom做一绑定，否则不知道最后插入到哪去
+  return vnode(elm.tagName.toLowerCase(), undefined, undefined, undefined, elm)
+}
+```
+* **patchVnode**
+```js
+function patchVnode (oldVnode, vnode) {
+  // 一、判断是否相同对象
+  if (oldVnode === vnode) {
+    return;
+  }
+  // 下面的这种情况也比较简单，在当新老 VNode 节点都是 isStatic（静态的），并且 key 相同时，只要将 componentInstance 与 elm 从老 VNode 节点“拿过来”即可。这里的 isStatic 也就是前面提到过的「编译」的时候会将静态节点标记出来，这样就可以跳过比对的过程。
+  if (vnode.isStatic && oldVnode.isStatic && vnode.key === oldVnode.key) {
+    vnode.elm = oldVnode.elm;
+    vnode.componentInstance = oldVnode.componentInstance;
+    return;
+  }
+  // 连等赋值,把新 oldVnode.elm 设置给新的vnode.elm，这样就能知道关联到哪个真实dom
+  const elm = vnode.elm = oldVnode.elm;
+  const oldCh = oldVnode.children;
+  const ch = vnode.children;
+  // 二、判断newVnode上有没有text
+  // 这里为啥不考虑 oldVnode呢，因为 newVnode有text说明就没children, children和text不会共存
+  if (vnode.text) {
+    // 当新 VNode 节点是文本节点的时候，直接用 setTextContent 来设置 text，这里的 nodeOps 是一个适配层，根据不同平台提供不同的操作平台 DOM 的方法，实现跨平台。
+    nodeOps.setTextContent(elm, vnode.text);
+  } else { 
+    // 1.新、旧节都有children 2. 新节点且有children，旧节点无children有text 2.只有旧节点且是text、3.只有旧节点且有children
+    // 1.oldCh 与 ch 都存在且不相同时，使用 updateChildren 函数来更新子节点，这个后面重点讲。
+    if (oldCh && ch && (oldCh !== ch)) {
+      updateChildren(elm, oldCh, ch);
+    // 2.新children有，旧children无（旧text有直接清空），然后将 ch 批量插入插入到节点elm下。
+    } else if (ch) {
+      // 如果旧text有值直接清空
+      if (oldVnode.text) nodeOps.setTextContent(elm, '');
+      // 添加新children
+      addVnodes(elm, null, ch, 0, ch.length - 1);
+    // 3.同理当只有 旧children有，新children无，老节点通过 removeVnodes 全部清除
+    } else if (oldCh) {
+      removeVnodes(elm, oldCh, 0, oldCh.length - 1)
+    // 4.旧text有值，全部清空
+    } else if (oldVnode.text) {
+      nodeOps.setTextContent(elm, '')
+    }
+  }
+}
+```
 ### 为什么 data 是一个函数
 :::tip
 组件中的 data 写成一个函数，数据以函数返回值形式定义，这样每复用一次组件，就会返回一份新的对象的独立拷贝data，类似于给每个组件实例创建一个私有的数据空间，让各个组件实例维护各自的数据。而单纯的写成对象形式，就使得所有组件实例共用了一份 data，就会造成一个变了全都会变的结果，跟JS的引用类型相关，而非Vue.
