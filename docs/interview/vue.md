@@ -253,8 +253,8 @@ return {
 }
 
 ```
-![patch](../assets/images/interview/28.png)
-* **写个基础的patch**
+![patch](../assets/images/interview/29.png)
+* **一、写个基础的patch**
 ```js
 import vnode from './vnode'
 // 导出 patch
@@ -319,7 +319,7 @@ function emptyNodeAt(elm) {
   return vnode(elm.tagName.toLowerCase(), undefined, undefined, undefined, elm)
 }
 ```
-* **patchVnode**
+* **二、patchVnode**
 ```js
 function patchVnode (oldVnode, vnode) {
   // 一、判断是否相同对象
@@ -360,6 +360,82 @@ function patchVnode (oldVnode, vnode) {
       nodeOps.setTextContent(elm, '')
     }
   }
+}
+```
+* **三、updateChildren**
+```js
+function updateChildren (parentElm, oldCh, newCh) {
+    let oldStartIdx = 0;
+    let newStartIdx = 0;
+    let oldEndIdx = oldCh.length - 1;
+    let oldStartVnode = oldCh[0];
+    let oldEndVnode = oldCh[oldEndIdx];
+    let newEndIdx = newCh.length - 1;
+    let newStartVnode = newCh[0];
+    let newEndVnode = newCh[newEndIdx];
+    let oldKeyToIdx, idxInOld, elmToMove, refElm;
+
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+        if (!oldStartVnode) {
+            oldStartVnode = oldCh[++oldStartIdx];
+        } else if (!oldEndVnode) {
+            oldEndVnode = oldCh[--oldEndIdx];
+        // 1.新头旧头
+        } else if (sameVnode(oldStartVnode, newStartVnode)) {
+            patchVnode(oldStartVnode, newStartVnode);
+            oldStartVnode = oldCh[++oldStartIdx];
+            newStartVnode = newCh[++newStartIdx];
+        // 2.新尾旧尾
+        } else if (sameVnode(oldEndVnode, newEndVnode)) {
+            patchVnode(oldEndVnode, newEndVnode);
+            oldEndVnode = oldCh[--oldEndIdx];
+            newEndVnode = newCh[--newEndIdx];
+        // 3.旧头新尾
+        } else if (sameVnode(oldStartVnode, newEndVnode)) {
+            patchVnode(oldStartVnode, newEndVnode);
+            nodeOps.insertBefore(parentElm, oldStartVnode.elm, nodeOps.nextSibling(oldEndVnode.elm));
+            oldStartVnode = oldCh[++oldStartIdx];
+            newEndVnode = newCh[--newEndIdx];
+        // 4.旧尾新头
+        } else if (sameVnode(oldEndVnode, newStartVnode)) {
+            patchVnode(oldEndVnode, newStartVnode);
+            nodeOps.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm);
+            oldEndVnode = oldCh[--oldEndIdx];
+            newStartVnode = newCh[++newStartIdx];
+        } else {
+            // 以上四种方式都没命中
+            let elmToMove = oldCh[idxInOld];
+            if (!oldKeyToIdx) oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
+            // 拿新节点的key，能否对应上oldCh 中的某个节点的key
+            idxInOld = newStartVnode.key ? oldKeyToIdx[newStartVnode.key] : null;
+            // key没有对应上就这个位置，直接插入
+            if (!idxInOld) { // newStartVnode
+                createElm(newStartVnode, parentElm);
+                newStartVnode = newCh[++newStartIdx];
+            } else {
+            // key 对应上了，用sameVnode 去判断是否相等
+                elmToMove = oldCh[idxInOld];
+                // sameVnode 判断 sel、key都相等直接patchVnode
+                if (sameVnode(elmToMove, newStartVnode)) {
+                    patchVnode(elmToMove, newStartVnode);
+                    oldCh[idxInOld] = undefined;
+                    nodeOps.insertBefore(parentElm, newStartVnode.elm, oldStartVnode.elm);
+                    newStartVnode = newCh[++newStartIdx]; // 每次走完，指针累加
+                } else {
+                    // 不相等 直接创建
+                    createElm(newStartVnode, parentElm);
+                    newStartVnode = newCh[++newStartIdx];
+                }
+            }
+        }
+    }
+
+    if (oldStartIdx > oldEndIdx) {
+        refElm = (newCh[newEndIdx + 1]) ? newCh[newEndIdx + 1].elm : null;
+        addVnodes(parentElm, refElm, newCh, newStartIdx, newEndIdx);
+    } else if (newStartIdx > newEndIdx) {
+        removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
+    }
 }
 ```
 ### 为什么 data 是一个函数
