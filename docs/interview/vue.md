@@ -363,6 +363,7 @@ function patchVnode (oldVnode, vnode) {
 }
 ```
 * **三、updateChildren**
+![updateChildren](../assets/images/interview/30.png)
 ```js
 function updateChildren (parentElm, oldCh, newCh) {
     let oldStartIdx = 0;
@@ -390,13 +391,13 @@ function updateChildren (parentElm, oldCh, newCh) {
             patchVnode(oldEndVnode, newEndVnode);
             oldEndVnode = oldCh[--oldEndIdx];
             newEndVnode = newCh[--newEndIdx];
-        // 3.旧头新尾
+        // 3.旧头新尾:真实dom中的第一个节点会移到最后
         } else if (sameVnode(oldStartVnode, newEndVnode)) {
             patchVnode(oldStartVnode, newEndVnode);
             nodeOps.insertBefore(parentElm, oldStartVnode.elm, nodeOps.nextSibling(oldEndVnode.elm));
             oldStartVnode = oldCh[++oldStartIdx];
             newEndVnode = newCh[--newEndIdx];
-        // 4.旧尾新头
+        // 4.旧尾新头: 真实dom中的最后一个节点会移到最前，匹配上的两个指针向中间移动
         } else if (sameVnode(oldEndVnode, newStartVnode)) {
             patchVnode(oldEndVnode, newStartVnode);
             nodeOps.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm);
@@ -404,6 +405,7 @@ function updateChildren (parentElm, oldCh, newCh) {
             newStartVnode = newCh[++newStartIdx];
         } else {
             // 以上四种方式都没命中
+            // 如果四种匹配没有一对是成功的，那么遍历oldChild，newStartVnode挨个和他们匹配，匹配成功就在真实dom中将成功的节点移到最前面，如果依旧没有成功的，那么将newStartVnode对应的节点插入到dom中对应的oldStartIdx位置，oldStartIdx和newStartIdx指针向中间移动。
             let elmToMove = oldCh[idxInOld];
             if (!oldKeyToIdx) oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
             // 拿新节点的key，能否对应上oldCh 中的某个节点的key
@@ -437,6 +439,112 @@ function updateChildren (parentElm, oldCh, newCh) {
         removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
     }
 }
+```
+### Vue的template编译
+![template](../assets/images/interview/31.png)
+:::tip
+模板转换成js代码的过程，叫做模板编译
+如果是用vue-cli开发并引入`vue-loader`就直接会在开发环境就把template编译为`render`，自己简单尝试可以用`vue-template-complier`
+`template` => `ast` => `render`
+* 第一步： 是将 模板字符串 转换成 element ASTs（解析器）
+* 第二步： 是对 AST 进行静态节点标记，主要用来做虚拟DOM的渲染优化（优化器）
+* 第三步： 是 使用 element ASTs 生成 render 函数代码字符串（代码生成器）
+
+**compile 编译可以分成 parse、optimize 与 generate 三个阶段，最终需要得到 render**
+* parse: 正则等方式将 template 模板中进行字符串解析，得到指令、class、style等数据，形成 AST
+* optimize: 主要作用就跟它的名字一样「优化」,一些静态节点是不会根据数据变化而产生变化的，这些节点我们没有比对的需求，在静态的节点做上一些「标记」，在 patch 的时候我们就可以直接跳过这些被标记的节点的比对，从而达到「优化」的目的。
+* generate: 会将 AST 转化成 render funtion 字符串，最终得到 render 的字符串以及 staticRenderFns 字符串。
+:::
+```js
+const complier = require('vue-template-complier');
+// 插值表达式
+const template = `<p>{{message}}</p>`;
+const render = new Function("with(this) {return _c('p', {attrs: {'id': 'app'}}, [_v('\n' + _s(message) + '\n)])}");
+// 插值表达式
+const template = `
+  <div id="div1" class="container>
+    <img src=""imgUrl"/>
+  </div>
+`
+// with(this){
+//   return _c('div',
+//     {staticClass: "containner",attrs: {"id": "div1"}},
+//     [_c('img', {attrs: {"src": imgUrl}})  ]
+//   )
+// }
+
+// 三目运算符
+const template = `<p>{{show ? '打开' : '关闭'}}</p>`;
+const render = new Function("with(this) {return _c('p', {attrs: {'id': 'app'}}, [_v('\n' + _s(show ？'打开' : '关闭') + '\n)])}");
+// 循环v-for
+const template = `
+  <ul>
+    <li v-for="item in list" :key="item.id">{{item.title}}</li>
+  </ul>
+`;
+// with(this){
+//   return _c('ul',
+//     _l((list), function(item){return _c('li', {key: item.id}, [_v(s_(item.title))])})
+//   )
+// }
+// 事件
+const template = `<button @click="handleclick">submit</button>`;
+with(this){
+  return _c('button',{on: {"click": handleclick}}, [_v("submint")])
+}
+// v-model
+const template = `<input type="text" v-mode="title" />`;
+
+width(this) {
+_c(
+  'input',
+  {
+    directives: [
+      {
+        name: "model",
+        rawName: "v-model",
+        value: (title),
+        expression: "title"
+      }],
+      attrs: { "type": "text" },
+      domProps: { "value": (title) },
+      on: {
+        "input": function ($event) {
+          if ($event.target.composing) return;
+          title = $event.target.value
+        }
+      }
+    }
+  )
+}
+// this = new Vue、 _c = createElement、 _v = createTextVNode、 _s = toStrig, _l = renderList用来做循环
+`createElement ==> Vode`
+// 用template代替render(render(高)的性能要比tempate(低)要高。)
+Vue.component("h-title",{
+    render:function(h){
+        return h(
+            "h" + this.level,
+            {
+                attrs:{
+                    “data-id”:10        
+                }
+            },
+           [
+             createElement('a', {
+               arrtrs: {
+                 name: 'headerId',
+                 href: "#" + "headerId"
+               }
+             }, 'this is a tag')
+           ]
+        )
+    },
+    props:{
+        level:{
+            type:String
+        }
+    }
+  })
 ```
 ### 为什么 data 是一个函数
 :::tip
@@ -503,7 +611,8 @@ const vm = {
 :::tip
 v-for 和 v-if 不要在同一个标签中使用,因为在vue2.0解析时先解析 v-for 优先级高于 v-if(vue3.0恰恰相反),这意味着 v-if 将分别重复运行于每个 v-for 循环中。如果遇到需要同时使用时可以考虑写成计算属性的方式。
 :::
-### v-for 为什么要加 key
+### v-for 为什么要加 唯一的key
+建议阅读有关[v-for](https://juejin.cn/post/6993478891243307022)
 :::tip
 key 是为 Vue 中 vnode 的唯一标记，当diff oldCh 和 newCh 四种比较方式没有匹配到，如果设置了key就会用key比较，如果不使用 key，Vue 会使用一种最大限度减少动态元素并且尽可能的尝试就地修改/复用相同类型元素的算法。通过这个 key，我们的 diff 操作可以更准确、更快速
 更准确：因为带 key 就不是原地复用了，在 sameNode 函数 a.key === b.key 对比中可以避免就地复用的情况。所以会更加准确。
