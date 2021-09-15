@@ -1177,9 +1177,143 @@ location / {
   add_header Access-Control-Allow-Origin *;
 }
 ```
+### Proxy 和 Reflect 作用和使用
+```js
+/*
+  Proxy.set陷阱默认接收 四个参数
+  trapTarget 用于接收属性（代理的目标）的对象
+  key 要写入的属性键（字符串或Symbol类型）
+  value 被写入的属性的值
+  receiver 操作发生的对象（通常是代理）
+*/
+// Reflect作用
+// 1. 和Proxy能力一一对应
+// 2. 规范化、标准化、函数式
+// 3. 替代掉Object上的工具函数（让object更纯净）
+// const obj = {a: '100'};
+// 'a' in obj ==> Reflect.has(obj, 'a') // 函数式
+// delete obj.a ==> Reflect.deleteProperty(obj, 'a')
+// Object.getOwnPropertyNames(obj) ===> Reflect.ownKeys(obj)
+const data2 = {
+  name: '李狗蛋',
+  age: 24
+};
+const array = ['a','b','c'];
+// Proxy 和 Reflect 配合使用，Proxy代理 Reflect 做反射，反射到目标属性的的属性值
+const proxyData = new Proxy(array, {
+    get(target, key, receiver) {
+        const result = Reflect.get(target, key, receiver);
+        // 只处理本身(非原型的)属性
+        const ownKeys = Reflect.ownKeys(target)
+        if(ownKeys.includes(key)) {
+          console.log('__get:', key, result) //监听
+        }
+        return result //返回结果
+    },
+    set(target, key, value, receiver) {
+        // 重复数据不处理
+        if(value === target[key]) {
+          return true
+        }
+        // Reflect.set 方法 返回Boolean 是否设置成功(有些数据是不能被修改的，所以返回是否修改成功)
+        const result = Reflect.set(target, key, value, receiver)
+        console.log('__set:', key, value, result) //set age 30
+        return result // 返回Boolean 是否设置成功
+    },
+    deleteProperty(target, key) {
+        const result = Reflect.deleteProperty(target, key)
+        console.log('__delete property:', key) //delete property name
+        return result //返回Boolean 是否删除成功
+    },
+})
+// data2.age // 不会打印，需要用代理之后的proxyData
+// proxyData.age 
+// proxyData.age = 27
+// delete proxyData.age
+// proxyData.push // push ƒ push() { [native code] }
+proxyData.push('d');
 
+/*
+  // 用Reflect.ownKey过滤，否则会打印push方法
+  __get: push ƒ push() { [native code] }
+  __get: length 3
+  __set: 3 d true
+  __set: length 4 true 
+*/
+```
+### Vue3.0 Proxy实现响应式原理
+:::tip
+1. 创建响应式方法reactive(data)，该方法可以传入需要处理的数据对象data
+函数内逻辑：
+2. 判断 data 是否为 对象或者数组，不是直接返回
+3. 创建 Proxy 代理对象，Proxy对象中传入data
+Proxy 代理对象中的方法配置：
+4. 在get()方法对数据的进行监听：只监听 处理本身（非原型）的属性；在返回结果中采用递归调用reactive(),实现对数据的深度监听
+5. 在 set() 方法中进行数据的新增和更新：判断是否是新增数据；重复的数据不处理；
+6. 在 deleteProperty() 方法中对数据进行删除操作；
+实例：
+7. 定义数据data,传入响应式方法中，返回的值proxyData为实现响应式的可操作数据
+:::
+```js
+// 创建响应式
+function reactive(target = {}) {
+  if (typeof target != 'object' || target == null) {
+    // 不是对象或者数组，则返回
+    return target
+  }
+  // 代理配置 生成代理对象
+  return observed = new Proxy(target, {
+    // target：目标对象、 key：被捕获的属性名、receiver：Proxy或者继承Proxy的对象
+    get(target, key, receiver) {
+      // 只监听 处理本身（非原型）的属性 ,如push()
+      const ownKeys = Reflect.ownKeys(target)
+      if (ownKeys.includes(key)) {
+        console.log('get', key) //监听
+      }
+      const result = Reflect.get(target, key, receiver)
+      // return result //返回结果
+      // 深度监听
+      // 性能如何提升的？
+      return reactive(result) // 可能是对象 递归get处理 实现深度监听
+    },
+    // value 新属性值。
+    set(target, key, value, receiver) {
+      // 判断是否是新增属性
+      const ownKeys = Reflect.ownKeys(target)
+      if (ownKeys.includes(key)) {
+        console.log('已有的 key') //监听
+      } else {
+        console.log('新增的 key')
+      }
+      // 重复的数据不处理
+      const oldVal = target[key]
+      if (value === oldVal) {
+        return true
+      }
+      const result = Reflect.set(target, key, value, receiver)
+      console.log('set', key, value) //set age 30
+      return result //是否设置成功
+    },
+    deleteProperty(target, key) {
+      const result = Reflect.deleteProperty(target, key)
+      console.log('delete property', key) //delete property name
+      console.log('result', result) //result true
+      return result //是否删除成功
+    },
+  })
+
+}
+```
+### Vue3.0 `Proxy` 和 `defineProperty` 对比
+:::tip
+* 深度监听，性能更好(`Proxy.get` 访问到才进行监听, 而使用`defineProperty`直接递归到底计算量大)
+* 可监听新增/删除 属性
+* 可监听数组变化
+* Proxy能规避`Object.defineProperty`的问题
+* Proxy无法兼容所有浏览器，无法polyfill
+:::
 ### Vue3.0
 :::tip
 1. Vue3.0更好的代码管理方式：monorepo
-2. 
+2. Vue3.2新增`v-memo`,渲染 `v-for` 长列表 (长度大于 1000）可以加上`v-memo`配合使用,它提供了记忆模板树的一部分的能力。命中允许 Vue 不仅跳过虚拟 DOM 差异，而且完全跳过新 VNode 的创建,复用 Vnode,空间换时间优化。
 :::
