@@ -53,6 +53,10 @@ export default defineUserConfig<DefaultThemeOptions>({
             link: '/interview/vue.md'
           },
           {
+            text: 'webpack相关',
+            link: '/interview/webpack.md'
+          },
+          {
             text: 'JavaScript基础知识',
             link: '/interview/javascript.md'
           },
