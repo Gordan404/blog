@@ -320,5 +320,53 @@ module.exports = smart(webpackCommonConf, {
 1. 某块业务代码被多个入口引用，抽离出来，放到一个公共模块中。这样不管这个模块被多少个入口引用，都只会在最终打包结果中出现一次解决代码冗余。
 2. 第三方库一般很大，而且代码基本不会再改动,我会把一些特别大的库分别独立打包，(抽离后不会因为业务代码改变，而导致库hash值不变)，剩下的加起来如果还很大，就把它按照一定大小切割成若干模块。
 :::
-```
+```js
+// prod
+module.exports = smart(webpackCommonConf, {
+    mode: 'production',
+    output: {
+        // filename: 'bundle.[contentHash:8].js',  // 打包代码时，加上 hash 戳
+        filename: '[name].[contentHash:8].js', // name 即多入口时 entry 的 key
+        path: distPath,
+        // publicPath: 'http://cdn.abc.com'  // 修改所有静态文件 url 的前缀（如 cdn 域名），这里暂时用不到
+    },
+    module: {
+      ...
+    },
+    optimization: {
+        // 压缩 css
+        minimizer: [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})],
+
+        // 分割代码块
+        splitChunks: {
+            chunks: 'all',
+            /**
+             * initial 入口 chunk，对于异步导入的文件不处理
+                async 异步 chunk，只对异步导入的文件处理
+                all 全部 chunk
+             */
+
+            // 缓存分组
+            cacheGroups: {
+                // 第三方模块
+                vendor: {
+                    name: 'vendor', // chunk 名称
+                    priority: 1, // 权限更高，优先抽离，重要！！！
+                    test: /node_modules/,
+                    minSize: 0,  // 大小限制
+                    minChunks: 1  // 最少复用过几次
+                },
+
+                // 公共的模块
+                common: {
+                    name: 'common', // chunk 名称
+                    priority: 0, // 优先级
+                    minSize: 0,  // 公共模块的大小限制
+                    minChunks: 2  // 公共模块最少复用过几次
+                }
+            }
+        }
+    }
+})
+
 ```
