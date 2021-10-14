@@ -40,6 +40,7 @@ module.exports = {
                 // loader 的执行顺序是：从后往前
                 loader: ['style-loader', 'css-loader', 'postcss-loader'] 
                 // 加了 postcss
+                // 注意:common.js 不应该用style-loader，只有在dev中存在，prod中用MiniCssExtractPlugin，后面【CSS抽离】会提到
             },
             {
                 test: /\.less$/,
@@ -315,20 +316,16 @@ module.exports = smart(webpackCommonConf, {
     }
 })
 ```
-### 抽离公共代码
+### 抽离公共代码(splitChunks)
 :::tip
 1. 某块业务代码被多个入口引用，抽离出来，放到一个公共模块中。这样不管这个模块被多少个入口引用，都只会在最终打包结果中出现一次解决代码冗余。
-2. 第三方库一般很大，而且代码基本不会再改动,我会把一些特别大的库分别独立打包，(抽离后不会因为业务代码改变，而导致库hash值不变)，剩下的加起来如果还很大，就把它按照一定大小切割成若干模块。
+2. 第三方库一般很大，而且代码基本不会再改动,我会把一些特别大的库分别独立打包，(抽离后不会因为业务代码改变，而导致库hash值也变)，剩下的加起来如果还很大，就把它按照一定大小切割成若干模块。
 :::
 ```js
-// prod
+// prod.common.js
 module.exports = smart(webpackCommonConf, {
     mode: 'production',
     output: {
-        // filename: 'bundle.[contentHash:8].js',  // 打包代码时，加上 hash 戳
-        filename: '[name].[contentHash:8].js', // name 即多入口时 entry 的 key
-        path: distPath,
-        // publicPath: 'http://cdn.abc.com'  // 修改所有静态文件 url 的前缀（如 cdn 域名），这里暂时用不到
     },
     module: {
       ...
@@ -361,12 +358,39 @@ module.exports = smart(webpackCommonConf, {
                 common: {
                     name: 'common', // chunk 名称
                     priority: 0, // 优先级
-                    minSize: 0,  // 公共模块的大小限制
+                    minSize: 0,  // 公共模块的大小限制(如果太小就没必要单独打包了)
                     minChunks: 2  // 公共模块最少复用过几次
                 }
             }
         }
     }
 })
+// webpack.common.js
+module.exports = {
+    entry: {
+    },
+    module: {
+    },
+    plugins: [
+        // new HtmlWebpackPlugin({
+        //     template: path.join(srcPath, 'index.html'),
+        //     filename: 'index.html'
+        // })
+
+        // 多入口 - 生成 index.html
+        new HtmlWebpackPlugin({
+            template: path.join(srcPath, 'index.html'),
+            filename: 'index.html',
+            // chunks 表示该页面要引用哪些 chunk （即上面的 index 和 other），默认全部引用
+            chunks: ['index', 'vendor', 'common']  // 要考虑代码分割
+        }),
+        // 多入口 - 生成 other.html
+        new HtmlWebpackPlugin({
+            template: path.join(srcPath, 'other.html'),
+            filename: 'other.html',
+            chunks: ['other', 'common']  // 考虑代码分割
+        })
+    ]
+}
 
 ```
