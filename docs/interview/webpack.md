@@ -247,7 +247,7 @@ module.exports = smart(webpackCommonConf, {
 ```
 ### CSS抽离
 :::tip
-原本打包过后是css-in-js,在开发环境中使用HMR,style-loader会在页面中创建很多`<style>`标签,增加js体积,配置完`MiniCssExtractPlugin后`,可以将css单独打包出来`MiniCssExtractPlugin`这个插件应该只在生产环境构建中使用，并且在loader链中不应该有style-loader
+原本打包过后是css-in-js,在开发环境中使用HMR,style-loader会在页面中创建很多`<style>`标签,增加js体积,配置完`MiniCssExtractPlugin后`,可以将css单独打包出来`MiniCssExtractPlugin`这个插件应该只在生产环境构建中使用，并且在loader链中不应该有style-loader,抽离之后可以相互引用
 :::
 ```js
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
@@ -392,5 +392,4 @@ module.exports = {
         })
     ]
 }
-
 ```
