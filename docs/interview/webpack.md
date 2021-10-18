@@ -247,7 +247,7 @@ module.exports = smart(webpackCommonConf, {
 ```
 ### CSS抽离
 :::tip
-原本打包过后是css-in-js,在开发环境中使用HMR,style-loader会在页面中创建很多`<style>`标签,增加js体积,配置完`MiniCssExtractPlugin后`,可以将css单独打包出来`MiniCssExtractPlugin`这个插件应该只在生产环境构建中使用，并且在loader链中不应该有style-loader,抽离之后可以相互引用
+原本打包过后是css-in-js,在开发环境中使用HMR,style-loader会在页面中创建很多`<style>`标签,增加js体积,配置完`MiniCssExtractPlugin后`,可以将css单独打包出来`MiniCssExtractPlugin`这个插件应该只在生产环境构建中使用，并且在loader链中不应该有style-loader,抽离之后可以相互引用。
 :::
 ```js
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
@@ -349,7 +349,7 @@ module.exports = smart(webpackCommonConf, {
                 vendor: {
                     name: 'vendor', // chunk 名称
                     priority: 1, // 权限更高，优先抽离，重要！！！
-                    test: /node_modules/,
+                    test: /node_modules/, // 命中第三方模块
                     minSize: 0,  // 大小限制
                     minChunks: 1  // 最少复用过几次
                 },
@@ -392,4 +392,47 @@ module.exports = {
         })
     ]
 }
+// chunks在哪些地方用到
+// 1.entry(中可以表示chunks的引用)
+// 2.splitChunks(也可以定义chunks)
+// 3.HtmlWebpackPlugin(使用chunks)
 ```
+### 懒加载
+```js
+// export default {
+//   message: 'this is data'
+// }
+// 引入动态数据 - 懒加载
+setTimeout(()=>{
+  // 回顾vue、react异步组件都是用的这个语法，是js的语法
+  // 异步加载也是定义一个chunk
+  import('./data.js').then(res => {
+    console.log(res.default.message) // 主力这里的defalut
+  })
+})
+
+const List = () => import(/* webpackChunkName: "home" */ './List.vue')
+```
+
+### 处理JSX和VUE
+```js
+// React
+// npm install --save-dev @babel/preset-react
+// .babelrc文件中配置
+{
+    "presets": ["@babel/preset-react"],
+    "plugins": []
+}
+// Vue直接只用vue-loader
+```
+
+### module chunk bundle 的区别
+![module chunk bundle](../assets/images/interview/14.png)
+:::tip
+* module: 各个源码文件，webpack中的一切皆模块(js、img、css、sass...)
+* chunk: 多个模块合并成的,如 entry 、import()、 splitChunk
+* bundle: webpack 处理好 chunk 文件后，最后会输出 bundle 文件，这个 bundle 文件包含了经过加载和编译的最终源文件，所以它可以直接在浏览器中运行。
+
+module、chunk 和 bundle 其实就是同一份逻辑代码在不同转换场景下的取了三个名字：
+我们直接写出来的是 module，webpack 处理时是 chunk，最后生成浏览器可以直接运行的 bundle。
+:::
