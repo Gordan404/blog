@@ -427,7 +427,7 @@ const List = () => import(/* webpackChunkName: "home" */ './List.vue')
 ```
 
 ### module chunk bundle 的区别
-![module chunk bundle](../assets/images/interview/14.png)
+![module chunk bundle](../assets/images/interview/33.png)
 :::tip
 * module: 各个源码文件，webpack中的一切皆模块(js、img、css、sass...)
 * chunk: 多个模块合并成的,如 entry 、import()、 splitChunk
@@ -436,3 +436,222 @@ const List = () => import(/* webpackChunkName: "home" */ './List.vue')
 module、chunk 和 bundle 其实就是同一份逻辑代码在不同转换场景下的取了三个名字：
 我们直接写出来的是 module，webpack 处理时是 chunk，最后生成浏览器可以直接运行的 bundle。
 :::
+### webpack 性能优化
+:::tip
+1. 优化打包构建速度 - 开发体验和效率
+2. 优化产出代码 - 产品性能
+:::
+####  优化打包构建速度
+:::tip
+1. `Loader`优化配置 【dev】
+2. `IgnorePlugin` (忽略第三方包指定目录，让这些指定目录(如moment的语言包)不要被打包进去)【prod】
+3. `noParse` 不去解析属性值代表的库的依赖(jquery) 【prod】
+4. `happyPack` 开启多个进程去打包(按需开启)，提高构建速度（特别是多核CPU） `ParallelUglifyPlugin` webpack内置Uglify工具压缩JS,但是是单线程，`ParallelUglifyPlugin` 是多进程压更快，和`happyPack`同理 【prod】
+* 项目较大，打包较慢，开启多进程能提高速度
+* 项目较小，打包很快，开启多进程会降低速度（进程多了，进程开启、销毁、通信），欲速则不达
+5. 热更新 模块热替换，解决页面刷新导致的状态丢失问题。【dev】 
+6. `DllPlugin` 我们的代码都可以至少简单区分成业务代码和第三方库。大部分第三方库框架如Vue React体积大，比较稳定、不常升级,构建慢。使用DllPlugin 动态库就不需要重新打包，每次构建只重新打包业务代码。【dev】
+:::
+**1. 优化`Loader`配置**
+```js
+// Loader处理文件的转换操作是很耗时的，所以需要让尽可能少的文件被Loader处理
+{
+    test: /\.js$/,
+    use: [
+        'babel-loader?cacheDirectory',//开启转换结果缓存(加上cacheDirectory参数后，启用缓存之后，如ES6没有改的就不会重新编译)
+    ],
+    include: path.resolve(__dirname, 'src'),//只对src目录中文件采用babel-loader
+    exclude: path.resolve(__dirname,' ./node_modules'),//排除node_modules目录下的文件
+    // include或者exclude确定范围，提升速度
+}
+```
+**2. IgnorePlugin**
+```js
+// 忽略第三方包指定目录，让这些指定目录不要被打包进去
+// 当我们使用moment,是一个时间工具包，内部里面把所有的语言包都引入；
+// 我们可以控制解析改包时，可以忽略调引入的文件。
+plugins: [
+    //weback自带的插件 忽略
+    new webpack.IgnorePlugin(/\.\/locale/,/moment/),//优化3   如果引入这个moment包时 会忽略调 locale文件
+    new HtmlWebpackPlugin({
+        template:"./public/index.html",
+
+    })
+],
+//我们要手动引入需要的语言包
+//手动引入中文包
+// import "moment/locale/zh-cn";
+```
+**3. noParse**
+```js
+// 不去解析属性值代表的库的依赖,webpack精准过滤不需要解析的文件.
+// 当解析jq的时候,会去解析jq这个库是否有依赖其他的包,我们对类似jq这类依赖库，
+// 一般会认为不会引用其他的包(特殊除外,自行判断)。所以，对于这类不引用其他的
+// 包的库，我们在打包的时候就没有必要去解析，这样能够增加打包速率。
+// 可以在webpack的module配置中增加noParse属性（以下代码只需要看module的noParse属性）
+{
+    module:{
+        noParse: /jquery|lodash/,  //接收参数  正则表达式 或函数
+        noParse:function(contentPath){
+            return /jquery|lodash/.test(contentPath);
+        }
+    }
+}
+```
+**4. happyPack 和 ParallelUglifyPlugin**
+```js
+// JS 单线程 =>nodeJS单线程=> webpack也是单线程，但是可以开启多个进程去打包，提高构建速度(特别是多核CPU)
+// webpack内置Uglify工具压缩JS,但是是单线程，使用ParallelUglifyPlugin` 是多进程压更快，和`happyPack`同理
+// npm i -D happypack
+module: {
+    rules: [
+        // js
+        {
+            test: /\.js$/,
+            // 把对 .js 文件的处理转交给 id 为 babel 的 HappyPack 实例
+            use: ['happypack/loader?id=babel'],
+            include: srcPath,
+            // exclude: /node_modules/
+        },
+    ]
+}
+plugins: [
+    ...
+    // happyPack 开启多进程打包
+    new HappyPack({
+        // 用唯一的标识符 id 来代表当前的 HappyPack 是用来处理一类特定的文件
+        id: 'babel',
+        // 如何处理 .js 文件，用法和 Loader 配置中一样
+        loaders: ['babel-loader?cacheDirectory']
+    }),
+
+    // 使用 ParallelUglifyPlugin 并行压缩输出的 JS 代码
+    new ParallelUglifyPlugin({
+        // 传递给 UglifyJS 的参数
+        // （还是使用 UglifyJS 压缩，只不过帮助开启了多进程）
+        uglifyJS: {
+            output: {
+                beautify: false, // 最紧凑的输出
+                comments: false, // 删除所有的注释
+            },
+            compress: {
+                // 删除所有的 `console` 语句，可以兼容ie浏览器
+                drop_console: true,
+                // 内嵌定义了但是只用到一次的变量
+                collapse_vars: true,
+                // 提取出出现多次但是没有定义成变量去引用的静态值
+                reduce_vars: true,
+            }
+        }
+    })
+],
+```
+**5. 热更新**
+![热更新](../assets/images/interview/34.png)
+:::tip
+发展历史 保存后自动编译（Auto Compile） => 自动刷新浏览器（Live Reload） => HMR（Hot Module Replacement，模块热替换）
+1. **手动：** 最早一切依赖手动，修改代码后需要手动执行`npm run build:xxx`, 然后刷新页面。
+2. **Watch：** 早期使用`gulp`或者`webpack`配置`Watch`模式，通过监控源码文件的变化来解决上面不能自动编译。
+3. **Live Reload：** 每次代码变更后浏览器中的预览页面能自动显示最新效果而无须手动点击刷新，我们需要一种通信机制来连接浏览器中的预览页面与本地监控代码变更的进程
+**缺点：** 整个网页刷新，速度较慢,状态会丢失(如：表单输入、弹框打开消失、颜色样式)
+4. **Hot Module Replacement** 模块热替换，解决页面刷新导致的状态丢失问题。
+
+* **CSS:** 使用 style-loader 和 css-loader 来解析导入的 CSS 文件。其中 css-loader 处理的是将导入的 CSS 文件转化为模块供后续 Loader 处理；而 style-loader 则是负责将 CSS 模块的内容在运行时添加到页面的 style 标签中。
+* **JS:** 使用hot.accept方法,当文本发生变更时，可以观察到浏览器端显示最新内容的同时并未触发页面刷新。vue-loader、 react-hot-loader 等加载器也都实现了该功能。
+:::
+```js
+// webpack中的配置
+devServer: {
+    port: 8080,
+    progress: true,  // 显示打包的进度条
+    contentBase: distPath,  // 根目录
+    open: true,  // 自动打开浏览器
+    compress: true,  // 启动 gzip 压缩
+    hot: true,
+    // 设置代理
+    proxy: {
+    }
+}
+// JS 代码中的热替换
+// ./text.js 
+export const text = 'Hello World' 
+// ./index2.js 
+import {text} from './text.js' 
+const div = document.createElement('div') 
+document.body.appendChild(div) 
+function render() { 
+  div.innerHTML = text; 
+} 
+render() 
+if (module.hot) { // 如果开启热更新
+  // 监听 xxx.js范围之内才热更新
+  module.hot.accept('./text.js', function() { 
+    render() 
+  }) 
+}
+
+```
+
+6. DllPlugin动态链接库插件
+::: tip
+我们的代码都可以至少简单区分成业务代码和第三方库。大部分第三方库框架如Vue React体积大，比较稳定、不常升级,构建慢。使用DllPlugin 动态库就不需要重新打包，每次构建只重新打包业务代码。
+用webpack已内置DllPlugin, 打包出dll文件，DllReferencePlugin 使用dll文件
+:::
+```js
+// package.json
+// {
+//   "scripts": {
+//     "dll": "webpack --config webpack.dll.config"
+//  }
+// }
+// npm run dll
+// webpack.dll.config.js
+module.exports = {
+  entry: {
+    // 把React 相关的模块放到一个单独的攻台链接库
+    react: ['react', 'react-dom', 'react-redux']
+  },
+  output: {
+    // 输出的动态链接库的文件名称，[name] 代表当前动态链接库的名称
+    // 也就是entry中配置的 react 和 polyfill
+    filename: '[name].dll.js',
+    //  输出的文件都放在dist 目录下
+    path: resolve('dist/dll'),
+    // library必须和后面dllplugin中的name一致 后面会说明
+    // 只所有加_dll_是为了防止全局变量冲突
+    library: '[name]_dll_[hash]'
+  },
+  plugins: [
+  // 接入 DllPlugin
+    new DllPlugin({
+      // 动态链接库的全局变量名称，需要和 output.library 中保持一致
+      // 该字段的值也就是输出的 manifest.json 文件 中 name 字段的值
+      name: '[name]_dll_[hash]',
+      // 描述动态链接库的 manifest.json 文件输出时的文件名称
+      path: path.join(__dirname, 'dist/dll', '[name].manifest.json')
+    }),
+  ]
+}
+// 在入口文件引入dll文件
+<script src="../../dist/dll/react.dll.js" ></script>
+```
+
+#### 优化产出代码
+:::tip
+1. 小图片`base64`编码，减少网络请求
+2. `bundle`加`hash`,文件没有修改 hash不变，能被浏览器缓存命中
+3. 懒加载，通过`import`
+4. splitChunks 提取公共代码，重复引用，解决代码冗余。
+5. `IgnorePlugin` (忽略第三方包指定目录，让这些指定目录(如moment的语言包)不要被打包进去)【prod】
+6. 使用CDN加速 `publicPath` 配置CDN路径
+7. 使用`production` 配置环境变量(接口域名、sourceMap、代码压缩)
+8. Scope Hosting
+9. 启动`Tree-Shaking`(主要功能就是去除没有用到代码,必须用 ES6 Module 才能Tree-Shaking 生效, commonjs就不行, webpack中已经默认开启Tree-Shaking)
+* 体积更小
+* 合理分包，不重复加载
+* 速度更快，内存使用更少
+:::
+
+
+
+### ES6 Module 和 Commonjs 区别
