@@ -645,13 +645,169 @@ module.exports = {
 5. `IgnorePlugin` (忽略第三方包指定目录，让这些指定目录(如moment的语言包)不要被打包进去)【prod】
 6. 使用CDN加速 `publicPath` 配置CDN路径
 7. 使用`production` 配置环境变量(接口域名、sourceMap、代码压缩)
-8. Scope Hosting
-9. 启动`Tree-Shaking`(主要功能就是去除没有用到代码,必须用 ES6 Module 才能Tree-Shaking 生效, commonjs就不行, webpack中已经默认开启Tree-Shaking)
+8. 启动`Tree-Shaking`(主要功能就是去除没有用到代码,必须用 ES6 Module 才能Tree-Shaking 生效, commonjs就不行, webpack中已经默认开启Tree-Shaking)
+9. `Scope Hosting` `webpack3.0+` 的默认行为，当打包前会自动简化代码，减少变量( )
 * 体积更小
 * 合理分包，不重复加载
 * 速度更快，内存使用更少
 :::
 
+```js
+// hello.js
+export default '李狗蛋'
+// main.js
+import str from './hello.js'
+console.log(str)
+// 默认打包结果
+[
+  (function(module,__webpack_exports__, __webpack_require__){
+  var WEBPACK_IMPORTED_MODULEC_0__till_js__ = __webpackrequire__(1);
+  console.log(__WEBPACK_IMPORT_MODULE_0__util_js__.["a"]);
+  }),
+  (function (module,__webpack_exports__, __webpack_require__)
+    __webpack_exports__["a"] = ("李狗蛋");
+}]
+// Scope Hosting
+[
+  (function(module,__webpack_exports__, __webpack_require__){
+    var hello = ('李狗蛋')
+    console.log(hello);
+  })
+]
+// 1. 在A文件导出一个字符串，在B文件中引入之后，通过console.log打印出来。
+// 2. 通过webpack打包构建之后，会发现将这两个文件构建成了两个函数，一个函数内是我们输出的字符串，一个函数内是console.log语句。
+// 问题：两个函数也就是两个作用域；不仅代码增加了，可读性还不太友好。
+// 3. 使用scope hosting进行配置处理之后，会讲本身的两个函数作用域合成一个，减少了代码量，也便于阅读
+```
+### ES Module 和 Commonjs 区别
+强烈建议阅读[es6Module与CommonJS](https://segmentfault.com/a/1190000021458835)
+:::tip
+* `CommonJs` 动态引入，执行时引入 可以动态加载语句，代码发生在运行时
+* `CommonJs` 导出值是拷贝，可以修改导出的值，这在代码出错时，不好排查引起变量污染
+* `ES Module` 静态引入,编译时引入,不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
+* `Es Module` 导出是引用值之前都存在映射关系，并且值都是可读的，不会被修改。
+* 只有`ES6 Module` 才能静态分析，实现 `Tree-Shaking`
+:::
+
+```js
+/*** Commonjs ***/
+// Commonjs Node.js是commonJS规范的主要实践者(module、exports、require、global)
+// index.js
+let num = 0;
+module.exports = {
+    num,
+    add() {
+       ++ num 
+    }
+}
+// 引用自定义的模块时，参数包含路径
+let { num, add } = require("./index.js")
+console.log(num) // 0
+add()
+console.log(num) // 0 值没有改变
+
+/*** es6 Modules ***/
+export let counter = 1;
+export function incCounter() {
+  counter ++;
+}
+import { counter, incCounter } from './exportDemo.mjs'
+incCounter();
+console.log(counter) // 打印结果为2，而不是初始值的1
+
+/**commonJS**/
+let apiList = require('../api/index.js')
+if(isDev) {
+  // commonJS 可以动态引入,执行时引入
+  let apiList = require('.../api/index.js')
+}
+
+/** es6 Modules**/
+import apiList form '../api/index.js'
+if(isDev) {
+  // 编译时报错，语法不支持，只能静态引入
+  import apiList form2 '../api2/index.js'
+}
+
+```
+### 配置Babel、babel-polyfill
+:::tip
+* `Babel` 默认只转换新的 JavaScript 句法（syntax），而不转换新的 API
+* `babel-polyfill` 是 `core-js`(实现了promise、Symbol、Class等) 和 `regenerator-runtime` （ es6 generator 函数(处理异步)）两者的集合。
+* `Babel 7.4`之后弃用了`babel-polyfill`,推荐直接引入`core-js` 和 `regenerator-runtime`
+* `babel-runtime` 使用 `babel-polyfill` 会导致污染了全局环境，并且不同的代码文件中包含重复的代码，使用`babel-runtime`就可以避免。
+
+**建议：** `babel-runtime` 适合在组件，类库项目中使用，而`babel-polyfill`适合在独立业务项目中使用。
+:::
+```js
+// ES6转ES5 分 语法 和API 两部分
+npm i -D webpack webpack-cli
+npm i -D babel-loader @babel/core
+npm i -D babel-preset-env
+npm install --save babel-runtime
+npm install --save-dev babel-plugin-transform-runtime
+
+// npm babel src/xxx.js
+/** .babelrc **/
+{
+  "presets": [
+    [
+      "@babel/preset-env", // preset-env 是es6、es7的plugins集合,常用语法解析,免去挨个配置
+      {
+        "useBuiltIns": "usage", // 自动添加 babel-polyfill的引用，按需引入
+        "corejs": 3, // corejs版本
+      }
+      // "babel/preset-typescript"
+    ]
+  ],
+  "plugins": [
+    [
+      "@babel/plugin-transform-runtime",
+      {
+        "absoluteRuntime": false,
+        "corejs": 3,
+        "helpers": true,
+        "regenerator": true,
+        "useESModules": false
+      }
+    ]
+  ]
+}
+
+// 特别注意: 使用 import '@babel/polyfill', 会导致把整个polyfill都引入,体积大, 只配置"useBuiltIns": "usage",不用写import,就可以做到按需引入
+
+/** Babel 7.4 之前 **/
+// import '@babel/polyfill'
+/** Babel 7.4 之后 **/
+// import 'core-js';
+// import 'regenerator-runtime/runtime';
+
+// babel-polyfill
+// 1. 会导致污染了全局环境
+// 2. 不同的代码文件中包含重复的代码，导致编译后的代码体积变大
+window.Promise = function() {}
+Array.prototype.includes = function() {}
+// babel-runtime
+_promise["default"] = function() {}
+_includes["default"]()
 
 
-### ES6 Module 和 Commonjs 区别
+// core-js 实现了promise、Symbol、Class等,Babel 默认只转换新的 JavaScript 句法（syntax），而不转换新的 API,所以需要用到core-js,但core-js不支持generator
+// ES6 generator 函数(处理异步)， 后被async/await 替代
+function* tell(x){
+  console.log('执行a处理')
+  yield 'a'
+  console.log('执行b处理')
+  yield 'b'
+  console.log('执行c处理')
+  yield 'c'
+}
+let k = tell();
+console.log(k.next()); // 执行a处理  {value: 'a', done: false}
+console.log(k.next()); // 执行b处理  {value: 'b', done: false}
+console.log(k.next()); // 执行c处理  {value: 'c', done: false}
+console.log(k.next()); //  {value: undefined, done: true}
+```
+
+
+
