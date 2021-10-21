@@ -51,6 +51,16 @@ vconsole-webpack-plugin: 移动端控制台
 6. 开启eslint、fixEslint、git commitizen(git cz)
 7. 移动端配置vconsole-webpack-plugin 插件、 postcss Rem、公司内部库
 ```
+
+### 如何产出一个lib
+
+```js
+output: {
+  filename: 'gordanUtil.js', // lib 的文件名
+  path: distPath, // 输出 到 dist目录下
+  library: 'gordanUtil' // lib的全局变量名称
+}
+```
 ### webpack-merge
 ```
 用webpack-merge将配置文件拆分为3个文件，一个是webpack.common.js，即不管是生产环境还是开发环境都会用到的部分，以及webpack.prod.js和webpack.dev.js, 并且使用webpack-merge来合并对象。
