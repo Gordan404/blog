@@ -4,7 +4,53 @@ sidebar: auto
 # 前端面试指北
 
 ## webpack相关面试题
+### 前端为何要进行打包和构建
+:::tip
+* 代码方面
+1. 体积更小(Tree-Sahking、压缩、合并)，加载更快
+2. 编译高级语言或者语法(TS、ES6+、 模块化、scss)
+3. 兼容性和错误检查(polyfill、postcss、eslint)
+* 研发流程
+1. 统一、高效的开发环境(多人团队开发)
+2. 统一的构建流程和产出标准
+3. 集成公司构造规范(CI/CD、提测、上线等)
+:::
 
+### loader 和 plugin 的区别
+:::tip
+* **作用:** 
+1. `loader` webpack 本身只能打包commonjs规范的js文件，针对css，图片等格式的文件没法打包, loader相当于翻译官、模块转换器。(执行顺序从下至上，从又往左)
+2. `plugin`完成的是loader不能完成的功能,通过钩子可以涉及到 webpack 的整一个事件流程,也就是说 plugin 可以通过监听这些生命周期的钩子在合适的时机使用 webpack 提供的API 做一些事情。
+
+如：针对html文件打包和拷贝（还有很多设置）的插件：html-webpack-plugin。 不但完成了html文件的拷贝，打包，还给html中自动增加了引入打包后的js文件的代码（），还能指明把js文件引入到html文件的底部等等
+* **从运行时机的角度区:**
+1. loader运行在打包文件之前（loader为在模块加载时的预处理文件）  
+2. plugins在整个编译周期都起作用
+:::
+### 常用的loader 和 plugin
+```js
+// webpack相当于是一个 loader 和 plugin 的集合
+loader
+1. 样式类的 loader：css-loader, style-loader, less-loader, postcss-loader(添加-webkit)等
+2. 文件类的 loader：url-loader ,file-loader, raw-loader等
+3. 编译类的 loader：vue-loader, babel-loader, ts-loader等
+4. 校验测试类 loader：eslint-loader, jslint-loader等
+plugin
+ignore-plugin：忽略部分文件
+html-webpack-plugin：简化 HTML 文件创建 (依赖于 html-loader)
+clean-webpack-plugin: 目录清理
+mini-css-extract-plugin: 分离样式文件，CSS 提取为独立文件，支持按需加载 (替代extract-text-webpack-plugin)
+vconsole-webpack-plugin: 移动端控制台
+```
+### 你们一般webpack会配置些什么
+```js
+1. production ENV 一些环境变量
+2. babel-polyfill 转ES5兼容低版本浏览器
+3. splitChunks 抽离公共代码和样式
+4. dll把一些第三方法库预先编译
+6. 开启eslint、fixEslint、git commitizen(git cz)
+7. 移动端配置vconsole-webpack-plugin 插件、 postcss Rem、公司内部库
+```
 ### webpack-merge
 ```
 用webpack-merge将配置文件拆分为3个文件，一个是webpack.common.js，即不管是生产环境还是开发环境都会用到的部分，以及webpack.prod.js和webpack.dev.js, 并且使用webpack-merge来合并对象。
@@ -646,11 +692,12 @@ module.exports = {
 6. 使用CDN加速 `publicPath` 配置CDN路径
 7. 使用`production` 配置环境变量(接口域名、sourceMap、代码压缩)
 8. 启动`Tree-Shaking`(主要功能就是去除没有用到代码,必须用 ES6 Module 才能Tree-Shaking 生效, commonjs就不行, webpack中已经默认开启Tree-Shaking)
-9. `Scope Hosting` `webpack3.0+` 的默认行为，当打包前会自动简化代码，减少变量( )
+9. `Scope Hosting` `webpack3.0+` 的默认行为，当打包前会自动简化代码，减少变量(两个函数作用域合成一个，减少了代码量)
 * 体积更小
 * 合理分包，不重复加载
 * 速度更快，内存使用更少
 :::
+#### Scope Hosting
 
 ```js
 // hello.js
@@ -811,3 +858,26 @@ console.log(k.next()); //  {value: undefined, done: true}
 
 
 
+
+
+### GitLab CI/CD 后的构建、发布
+![CI/CD](../assets/images/interview/36.png)
+:::tip
+1. 发布时间由平均 5 分钟减少到 1.5 分钟。从全程 5 分钟的手动操作，到只需合并分支代码、自动化构建及发布的 1.5 分钟。
+2. 前端构建放到 CI/CD 中，解决了本地构建可能导致线上代码打包后不一致的问题。
+* 提交代码到 GitLab 后，满足指定条件后会触发 pipeline 进行自动化构建、发布,pipeline 主要包括了，依赖下载，build 代码，发布到服务器这三个过程。
+:::
+![CI/CD](../assets/images/interview/35.jpeg)
+:::tip
+* hooks是在特定事件发生之前或之后执行特定脚本代码功能（从概念上类比，就与监听事件、触发器之类的东西类似）。
+* Git hooks就是那些在Git执行特定事件（如commit、push、receive等）后触发运行的脚本。
+* gitlab的web hooks跟git hook类型。也是当项目发生提交代码、提交tag等动作会自动去调用url，这个url可以是更新代码，或者其他操作。
+:::
+```js
+//  Git hooks => jean => 打包构建 => 回调
+// `Jenkins` 或者 `jean` 安装 `Git hook`插件
+// 目标主机上安装 GitLab Runner，这里的目标主机指你要部署的服务器
+// 配置项目 指定 Branch 分支
+// .gitlab-ci.yml 配置文件：(.gitlab-ci.yml中至少有一个Job)
+// 回调可以通知 钉钉、微信机器人
+```
