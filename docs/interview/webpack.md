@@ -4,6 +4,93 @@ sidebar: auto
 # 前端面试指北
 
 ## webpack相关面试题
+
+### CommonJs、AMD、CMD、ES Module、UMD
+:::tip
+中，同步意味着阻塞加载，浏览器资源是异步加载的。
+1. `AMD`：依赖前置, 提前执行(`requireJS`)。优点：适合在浏览器环境异步加载；缺点：阅读和书写比较困难。
+2. `CMD`：依赖就近、延迟执行(`seaJS`)。优点：很容易在node中运行, 支持动态引入；缺点：依赖spm打包，模块的加载逻辑偏重。
+3. `CommonJs`：优点：node中自带模块，服务器端模块便于重用。缺点：同步的模块加载方式不适合在浏览器环境
+4. `ES Module`：静态引入,编译时引入,编译时确定依赖关系,不可以动态加载语句。CommonJS 和 AMD 模块，都只能在运行时确定这些东西。优点：容易进行静态分析；缺点：原生浏览器未实现该标准。
+5. `UMD`: 主要用来解决CommonJS模式和AMD模式代码不能通用的问题，并同时还支持老式的全局变量规范。
+:::
+```js
+/** AMD写法 **/
+define(["a", "b", "c", "d", "e", "f"], function(a, b, c, d, e, f) { 
+});
+
+/** CMD写法 **/
+define(function(require, exports, module) {
+    var a = require('./a'); //在需要时申明
+    a.doSomething();
+    if (false) {
+        var b = require('./b');
+        b.doSomething();
+    }
+});
+/** CommonJS **/
+let num = 0;
+module.exports = {
+  num
+}
+let { num } = require("./index.js"
+/** ES Module **/
+export { basicNum, add };
+import { basicNum, add } from './math';
+
+
+```
+### ES Module 和 Commonjs 区别
+强烈建议阅读[es6Module与CommonJS](https://segmentfault.com/a/1190000021458835)
+:::tip
+* `CommonJs` 动态引入，执行时引入 可以动态加载语句，代码发生在运行时
+* `CommonJs` 导出值是拷贝，可以修改导出的值，这在代码出错时，不好排查引起变量污染
+* `ES Module` 静态引入,编译时引入,不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
+* `Es Module` 导出是引用值之前都存在映射关系，并且值都是可读的，不会被修改。
+* 只有`ES6 Module` 才能静态分析，实现 `Tree-Shaking`
+:::
+
+```js
+/*** Commonjs ***/
+// Commonjs Node.js是commonJS规范的主要实践者(module、exports、require、global)
+// index.js
+let num = 0;
+module.exports = {
+    num,
+    add() {
+       ++ num 
+    }
+}
+// 引用自定义的模块时，参数包含路径
+let { num, add } = require("./index.js")
+console.log(num) // 0
+add()
+console.log(num) // 0 值没有改变
+
+/*** es6 Modules ***/
+export let counter = 1;
+export function incCounter() {
+  counter ++;
+}
+import { counter, incCounter } from './exportDemo.mjs'
+incCounter();
+console.log(counter) // 打印结果为2，而不是初始值的1
+
+/**commonJS**/
+let apiList = require('../api/index.js')
+if(isDev) {
+  // commonJS 可以动态引入,执行时引入
+  let apiList = require('.../api/index.js')
+}
+
+/** es6 Modules**/
+import apiList form '../api/index.js'
+if(isDev) {
+  // 编译时报错，语法不支持，只能静态引入
+  import apiList form2 '../api2/index.js'
+}
+
+```
 ### 前端为何要进行打包和构建
 :::tip
 * 代码方面
@@ -14,6 +101,14 @@ sidebar: auto
 1. 统一、高效的开发环境(多人团队开发)
 2. 统一的构建流程和产出标准
 3. 集成公司构造规范(CI/CD、提测、上线等)
+:::
+### webpack的构建流程
+:::tip
+* **初始化参数：** 解析`webpack`配置参数，合并`shell`传入和`webpack.config.js`文件配置的参数,形成最后的配置结果；
+* **开始编译：** 上一步得到的参数初始化`compiler`对象，注册所有配置的插件，插件 监听webpack构建生命周期的事件节点，做出相应的反应，执行对象的`run`方法开始执行编译；
+* **确定入口：** 从配置的`entry`入口，开始解析文件构建`AST`语法树，找出依赖，递归下去；
+* **编译模块：** 递归中根据文件类型和`loader`配置，调用所有配置的loader对文件进行转换，再找出该模块依赖的模块，再递归本步骤直到所有入口依赖的文件都经过了本步骤的处理；
+* **完成模块编译并输出：** 递归完事后，得到每个文件结果，包含每个模块以及他们之间的依赖关系，根据`entry`或分包配置生成代码块`chunk`;
 :::
 
 ### loader 和 plugin 的区别
@@ -50,16 +145,6 @@ vconsole-webpack-plugin: 移动端控制台
 4. dll把一些第三方法库预先编译
 6. 开启eslint、fixEslint、git commitizen(git cz)
 7. 移动端配置vconsole-webpack-plugin 插件、 postcss Rem、公司内部库
-```
-
-### 如何产出一个lib
-
-```js
-output: {
-  filename: 'gordanUtil.js', // lib 的文件名
-  path: distPath, // 输出 到 dist目录下
-  library: 'gordanUtil' // lib的全局变量名称
-}
 ```
 ### webpack-merge
 ```
@@ -736,57 +821,6 @@ console.log(str)
 // 问题：两个函数也就是两个作用域；不仅代码增加了，可读性还不太友好。
 // 3. 使用scope hosting进行配置处理之后，会讲本身的两个函数作用域合成一个，减少了代码量，也便于阅读
 ```
-### ES Module 和 Commonjs 区别
-强烈建议阅读[es6Module与CommonJS](https://segmentfault.com/a/1190000021458835)
-:::tip
-* `CommonJs` 动态引入，执行时引入 可以动态加载语句，代码发生在运行时
-* `CommonJs` 导出值是拷贝，可以修改导出的值，这在代码出错时，不好排查引起变量污染
-* `ES Module` 静态引入,编译时引入,不可以动态加载语句，只能声明在该文件的最顶部，代码发生在编译时
-* `Es Module` 导出是引用值之前都存在映射关系，并且值都是可读的，不会被修改。
-* 只有`ES6 Module` 才能静态分析，实现 `Tree-Shaking`
-:::
-
-```js
-/*** Commonjs ***/
-// Commonjs Node.js是commonJS规范的主要实践者(module、exports、require、global)
-// index.js
-let num = 0;
-module.exports = {
-    num,
-    add() {
-       ++ num 
-    }
-}
-// 引用自定义的模块时，参数包含路径
-let { num, add } = require("./index.js")
-console.log(num) // 0
-add()
-console.log(num) // 0 值没有改变
-
-/*** es6 Modules ***/
-export let counter = 1;
-export function incCounter() {
-  counter ++;
-}
-import { counter, incCounter } from './exportDemo.mjs'
-incCounter();
-console.log(counter) // 打印结果为2，而不是初始值的1
-
-/**commonJS**/
-let apiList = require('../api/index.js')
-if(isDev) {
-  // commonJS 可以动态引入,执行时引入
-  let apiList = require('.../api/index.js')
-}
-
-/** es6 Modules**/
-import apiList form '../api/index.js'
-if(isDev) {
-  // 编译时报错，语法不支持，只能静态引入
-  import apiList form2 '../api2/index.js'
-}
-
-```
 ### 配置Babel、babel-polyfill
 :::tip
 * `Babel` 默认只转换新的 JavaScript 句法（syntax），而不转换新的 API
@@ -870,6 +904,15 @@ console.log(k.next()); //  {value: undefined, done: true}
 
 
 
+### 如何产出一个lib
+
+```js
+output: {
+  filename: 'gordanUtil.js', // lib 的文件名
+  path: distPath, // 输出 到 dist目录下
+  library: 'gordanUtil' // lib的全局变量名称
+}
+```
 ### GitLab CI/CD 后的构建、发布
 ![CI/CD](../assets/images/interview/36.png)
 :::tip
@@ -884,10 +927,13 @@ console.log(k.next()); //  {value: undefined, done: true}
 * gitlab的web hooks跟git hook类型。也是当项目发生提交代码、提交tag等动作会自动去调用url，这个url可以是更新代码，或者其他操作。
 :::
 ```js
-//  Git hooks => jean => 打包构建 => 回调
+//  Git hooks => Jenkins => 打包构建 => 回调
 // `Jenkins` 或者 `jean` 安装 `Git hook`插件
 // 目标主机上安装 GitLab Runner，这里的目标主机指你要部署的服务器
+// 在你安装gitlab-runner的服务器中安装docker。
 // 配置项目 指定 Branch 分支
+// 小程序可能需要miniprogram-ci支持，其从微信开发者工具中抽离的关于小程序/小游戏项目代码的编译模块
 // .gitlab-ci.yml 配置文件：(.gitlab-ci.yml中至少有一个Job)
 // 回调可以通知 钉钉、微信机器人
 ```
+
