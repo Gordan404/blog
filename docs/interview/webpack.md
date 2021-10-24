@@ -3,8 +3,7 @@ sidebar: auto
 ---
 # 前端面试指北
 
-## webpack相关面试题
-
+## webpack相关
 ### CommonJs、AMD、CMD、ES Module、UMD
 :::tip
 中，同步意味着阻塞加载，浏览器资源是异步加载的。

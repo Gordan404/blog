@@ -3,7 +3,7 @@ sidebar: auto
 ---
 # 前端面试指北
 
-## VUE相关面试题
+## VUE相关
 
 强烈建议阅读[Vue源码分析](/vueAnalysis/introduction/)
 
@@ -1089,7 +1089,7 @@ export default function initExtend(Vue) {
 3. 在 patch 前将指令的钩子提取到 cbs 中,在 patch 过程中调用对应的钩子
 4. 当执行指令对应钩子函数时，调用对应指令定义的方法
 
-### VUEX
+### VueX
 ![VUE](../assets/images/interview/22.png)
 :::tip
 vuex 是专门为 vue 提供的全局状态管理系统，用于多个组件中数据共享、数据缓存等。（无法持久化、内部核心原理是通过创造一个全局实例 new Vue）
@@ -1314,6 +1314,15 @@ function reactive(target = {}) {
 :::
 ### Vue3.0
 :::tip
-1. Vue3.0更好的代码管理方式：monorepo
-2. Vue3.2新增`v-memo`,渲染 `v-for` 长列表 (长度大于 1000）可以加上`v-memo`配合使用,它提供了记忆模板树的一部分的能力。命中允许 Vue 不仅跳过虚拟 DOM 差异，而且完全跳过新 VNode 的创建,复用 Vnode,空间换时间优化。
+
+1. `Proxy` 和 `Reflect` 代替 `defineProperty` 响应式API
+2. `TypeScript` 更好的TypeScript支持
+3. `setup` 是组合`Composition API`中的入口函数，也是第一个要使用的函数,只在初始化时执行一次，且在beforeCreate 、created 之前执行，所有的Composition API函数都在此使用。
+4. `Composition API` 受ReactHook启发,之前的2.x版本采用的是Options API（选项API），即官方定义好了写法：data、computed、methods，需要在哪里写就在哪里写，这样带来的问题就是随着功能增加，代码也越来复杂，我们看代码需要上下反复横跳
+5. `Tree-shaking` 之前大量的API挂载在Vue对象的原型上，难以实现TreeShaking，Vue3.x 都用ES6Moudle的方式引入方便静态分析。
+6. `Fragment` vue3.x template允许多个跟节点，类似`React.Fragment>`和`<></>`
+7. `Teleport` teleport参照React中的portal，可以将元素渲染在父节点以外的其他地方, vue2.x需要用`v-transfer-dom` 指令实现
+8. 废弃on，off，once实例方法，废弃`filters`
+9. Vue3.0更好的代码管理方式：monorepo
+10. Vue3.2新增`v-memo`,渲染 `v-for` 长列表 (长度大于 1000）可以加上`v-memo`配合使用,它提供了记忆模板树的一部分的能力。命中允许 Vue 不仅跳过虚拟 DOM 差异，而且完全跳过新 VNode 的创建,复用 Vnode,空间换时间优化。
 :::

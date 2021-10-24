@@ -49,12 +49,20 @@ export default defineUserConfig<DefaultThemeOptions>({
             link: '/interview/browser.md'
           },
           {
-            text: 'VUE知识点及常考',
+            text: 'Vue知识点及常考',
             link: '/interview/vue.md'
           },
           {
-            text: 'webpack相关',
+            text: 'React知识点及常考',
+            link: '/interview/react.md'
+          },
+          {
+            text: 'Webpack相关',
             link: '/interview/webpack.md'
+          },
+          {
+            text: '算法相关',
+            link: '/interview/algorithm.md'
           },
           {
             text: 'JavaScript基础知识',
