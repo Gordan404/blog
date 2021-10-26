@@ -34,6 +34,17 @@ function getQueryString(name) {
 // 测试：输出why
 console.log(getQueryString('name')); 
 ```
+### 对象组装URL地址
+```js
+function param(data) {
+  let url = ''
+  for (var k in data) {
+    let value = data[k] !== undefined ? data[k] : ''
+    url += '&' + k + '=' + encodeURIComponent(value)
+  }
+  return url ? url.substring(1) : ''
+}
+```
 ### 手写call、apply和bind方法
 ```js
 // call
