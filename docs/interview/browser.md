@@ -773,3 +773,37 @@ HTTPS 的 SSL 加密是在传输层实现的。
   503 请求未完成，服务器临时过载或宕机
 :::
 
+## RN/原生/WebView的相互通信
+:::tip
+1. 原生→Web：在Web中新增方法或者变量到Window对象上，然后原生可以通过新增的方法或变量进行传参等等。
+2. Web→原生：原生在WebView容器组件中监听url的变化，自定义协议也算是url。Web里可使用window.location.href = 'xxxx://xxx?a=x&b=x'改变url，这时原生进行拦截url即可，就能拿到数据，同时阻止页面刷新等操作。
+3. 原生→RN：使用事件方式`NativeEventEmitter`传递参数，可以参考和原生端通信。
+4. RN→原生：原生暴露方法出来（是Promise），可以参考和原生端通信。
+5. RN→Web：在RN的WebView中提到onMessage和postMessage，所以要在一端监听事件，另一端发送事件。示例：react-native与webview的双向通信
+6. Web→RN：参考上面RN→Web。
+:::
+### Javascript 调用 ios（oc、swift）原理
+:::tip
+* **h5向ios客户端发送消息**
+
+目前兼顾兼容性、比较成熟的方案还是通过拦截URL的方式。UIWebView的特性，在UIWebView内发起的所有网络请求，都可以在Native层被捕捉到。利用这一特性，就可以在UIWebView内发起一个自定义的网络请求，一般格式：jsbridge://method?参数1=value1&参数2=value2于是在UIWebView中，只要发现是jsbridge://开头的url，就不进行内容的加载，而是执行相应的逻辑处理。嵌入webview的h5中的js一般是通过动态创建隐藏iframe标签，赋值上文提到的链接给src，iframe不会引起页面调转、刷新。
+* **IOS客户端调用H5方法**
+s
+`stringByEvaluatingJavaScriptFromString`, JS注入其实就是执行了一个字符串化的js代码，调用了window下的一个对象，如果我们要让native来调用我们js写的方法，那这个方法就要在window下能访问到
+:::
+```js
+// IOS swift code
+ webview.stringByEvaluatingJavaScriptFromString("window.methodName()")
+```
+### Android和Javascript互相调用
+:::tip
+* Android调用JS代码的方法主要有2种
+1. `WebView`的`loadUrl`该方法的执行会使页面刷新(Android 4.4之前)
+2. `WebView`的`evaluateJavascript`,执行了一个字符串化的js代码,不会刷新页面(Android 4.4+)
+* JS调用Android代码的方法主要有3种：
+1. `WebView`的`addJavascriptInterface`进行对象映射, 暴露一个java对象给js, （低版本Android4以下好像有一些安全问题，本人没有验证）
+2. `WebViewClient` 通过schema方式，客户端使用shouldOverrideUrlLoading方法对url请求协议进行解析
+3. `WebChromeClient` 的onJsAlert、onJsConfirm、onJsPrompt方法回调拦截JS对话框alert()、confirm()、prompt() 消息
+:::
+
+

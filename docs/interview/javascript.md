@@ -1302,7 +1302,8 @@ box.addEventListener('click',() => {
 
 
 #### 事件触发顺序
-在浏览器中，事件的触发顺序一般而言依据：**捕获**->**目标阶段**->**冒泡**三个顺序。但事件的触发顺序并不总是按以上顺序执行，当我们给同一个DOM元素同时注册捕获和冒泡事件时，事件的触发顺序是按你注册事件的顺序来执行的。
+* **标准事件模型:** 在浏览器中，事件的触发顺序一般而言依据：**捕获**->**目标阶段**->**冒泡**三个顺序。但事件的触发顺序并不总是按以上顺序执行，当我们给同一个DOM元素同时注册捕获和冒泡事件时，事件的触发顺序是按你注册事件的顺序来执行的。
+* **IE事件模型:** IE的事件机制没有捕获阶段，事件流是非标准的，只有目标阶段和冒泡阶段。
 ```js
 // 点击DOM元素时。顺序打印出：冒泡时触发 捕获时触发
 var box = document.getElementById('box');
@@ -1312,6 +1313,8 @@ box.addEventListener('click',() => {
 box.addEventListener('click', () => {
   console.log('捕获时触发');
 }, true);
+
+// IE： attachEvent()//事件绑定 detachEvent()移除 cancelBubble()冒泡
 ```
 
 **阻止事件冒泡：** `stopPropagation()`和`stopImmediaPropagation()`方法都能阻止事件的向上冒泡，但这两者是有区别的：`stopImmediaPropagation()`还能阻止目标执行别的注册事件。
