@@ -8,6 +8,7 @@ sidebar: auto
 :::tip
 1. `Vue` 定义了很多指令(如v-for、v-if)去实现一些展示，`React` 主要还是依赖JS方法去实现
 2. `Vue` 绑定事件 `Event` 是原生的和DOM事件一样, 而 `React` 是封装组合之后的 `SyntheticBaseEvent` 需要访问`nativeEvent` 才能获取原生`Event`。
+3. `Vue` 使用 `v-model` 语法糖实现双向数据绑定，而`React`则需要自己绑定`onChange` 事件
 :::
 
 ### 为什么React中事件绑定的函数内部this默认指向undefined?
@@ -73,12 +74,37 @@ class EventDemo extends React.Component {
         <div>
     }
 }
-
 ```
 ### 浅谈React合成
 :::tip
 1. `Event` 是封装组合之后的 `SyntheticBaseEvent`, 模拟出来的DOM事件所有能力
 2. `event.nativeEvent` 是原生事件对象
-3. 在`React17`之前，`React`是把所有事件委托在`document`上的，`React17`及以后版本不再把事件委托在`document`上，而是委托在挂载的容器上了。
+3. 和 DOM 事件不一样, 和 Vue 事件也不一样
+4. 在`React17`之前，`React`是把所有事件委托在`document`上的，`React17`及以后版本不再把事件委托在`document`上，而是委托在挂载的容器上了。
 React合成事件是指将原生事件合成一个React事件，之所以要封装自己的一套事件机制，目的是为了实现全浏览器的一致性，抹平不同浏览器之间的差异性(如标准事件模型、IE)。
 :::
+```js
+// 定义捕获事件
+Vue: <div @click.capture="handleClick" />
+React: <div onClickCapture={this.onClickOuter} />
+// React绑定事件，最后都会追加Event参数
+```
+### 受控和非受控组
+:::tip
+* **受控组件：** 控制着输入的过程，`react`的`state`为唯一的数据来源，被`react.state`这样控制着的就是受控组件(相当于实现数据绑定)。
+* **非受控组件：** 在html表单中，input select checkbox textarea等输入组件，本身就会维护一个状态，来暂存输入值。如果不需要关心控制值是怎么修改更新的，只需要获取这个组件的值，那么这个就是非受控组件，我们只需要拿到值，可以通过ref来获取。
+:::
+### setState
+:::tip
+1. 不可变值(为了性能优化,不去触发shouldComponentUpdate)
+2. 可能是异步更新
+3. 可能会被合并
+:::
+```js
+ // this.state.count++ // 错误的写法
+  // setState一定要用不可变值了
+ // 什么时候需要改，再去设置值，禁止提前修改值，而导致触发shouldComponentUpdate
+  this.setState({
+    count: this.state.count + 1 // SCU
+  })
+```
