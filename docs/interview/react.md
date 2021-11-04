@@ -15,8 +15,8 @@ sidebar: auto
 函数的作用域是由函数调用的时候决定的，而不是函数声明的时候。第一次调用是作为对象中的函数调用，因此this指向对象本身。而第二次调用是作为普通函数调用，所以this指向全局对象，在严格模式时会指向undefined。
 
 **解决办法：**
-1. 使用es6箭头函数，箭头函数this默认指向上一层级的环境    如   <input onChange={()=>this.change()}  />
-2. 使用bind绑定this  ，写在constructor里  　如  this.change = this.change.bind(this);  
+1. 使用es6箭头函数，箭头函数this默认指向上一层级的环境 `<input onChange={()=>this.change()}  />`
+2. 使用bind绑定this写在constructor里 `this.change = this.change.bind(this)`;  
 :::
 ```js
 var name = 'Gordanlee';

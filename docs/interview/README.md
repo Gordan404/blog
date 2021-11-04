@@ -1243,8 +1243,6 @@ function render() {
 //第一帧渲染
 window.requestAnimationFrame(render);
 ```
-
-
 ### EventLoop事件循环
 
 #### 进程和线程
