@@ -3,14 +3,27 @@ sidebar: auto
 ---
 # 前端面试指北
 ## React相关知识
-
+### 什么是 React
+:::tip
+React是一个简单的javascript UI库，用于构建高效、快速的用户界面。它是一个轻量级库，因此很受欢迎。它遵循组件设计模式、声明式编程范式和函数式编程概念，以使前端应用程序更高效。它使用虚拟DOM来有效地操作DOM。它遵循从高阶组件到低阶组件的单向数据流。
+:::
+### 函数式编程
+:::tip
+函数式编程是声明式编程的一部分。javascript中的函数是第一类公民，这意味着函数是数据，你可以像保存变量一样在应用程序中保存、检索和传递这些函数。
+**函数式编程有些核心的概念，如下：**
+* 不可变性(Immutability)
+* 纯函数(Pure Functions)
+* 数据转换(Data Transformations)
+* 高阶函数 (Higher-Order Functions)
+* 递归
+* 组合
+:::
 ### Vue React一些区别
 :::tip
 1. `Vue` 定义了很多指令(如v-for、v-if)去实现一些展示，`React` 主要还是依赖JS方法去实现
 2. `Vue` 绑定事件 `Event` 是原生的和DOM事件一样, 而 `React` 是封装组合之后的 `SyntheticBaseEvent` 需要访问`nativeEvent` 才能获取原生`Event`。
 3. `Vue` 使用 `v-model` 语法糖实现双向数据绑定，而`React`则需要自己绑定`onChange` 事件
 :::
-
 ### 为什么React中事件绑定的函数内部this默认指向undefined?
 :::tip
 函数的作用域是由函数调用的时候决定的，而不是函数声明的时候。第一次调用是作为对象中的函数调用，因此this指向对象本身。而第二次调用是作为普通函数调用，所以this指向全局对象，在严格模式时会指向undefined。
@@ -103,8 +116,9 @@ React: <div onClickCapture={this.onClickOuter} />
 ```js
  // this.state.count++ // 错误的写法
   // setState一定要用不可变值了
- // 什么时候需要改，再去设置值，禁止提前修改值，而导致触发shouldComponentUpdate
+ // 只能用setState去修改值，禁止提前修改值，而导致触发shouldComponentUpdate
   this.setState({
     count: this.state.count + 1 // SCU
   })
 ```
+
