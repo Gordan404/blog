@@ -1321,7 +1321,7 @@ function reactive(target = {}) {
 4. `Composition API` 受ReactHook启发,之前的2.x版本采用的是Options API（选项API），即官方定义好了写法：data、computed、methods，需要在哪里写就在哪里写，这样带来的问题就是随着功能增加，代码也越来复杂，我们看代码需要上下反复横跳
 5. `Tree-shaking` 之前大量的API挂载在Vue对象的原型上，难以实现TreeShaking，Vue3.x 都用ES6Moudle的方式引入方便静态分析。
 6. `Fragment` vue3.x template允许多个跟节点，类似`React.Fragment>`和`<></>`
-7. `Teleport` teleport参照React中的portal，可以将元素渲染在父节点以外的其他地方, vue2.x需要用`v-transfer-dom` 指令实现
+7. `Teleport` teleport(传送门))参照React中的portal，可以将元素渲染在父节点以外的其他地方, vue2.x需要用`v-transfer-dom` 指令实现
 8. 废弃on，off，once实例方法，废弃`filters`
 9. Vue3.0更好的代码管理方式：monorepo
 10. Vue3.2新增`v-memo`,渲染 `v-for` 长列表 (长度大于 1000）可以加上`v-memo`配合使用,它提供了记忆模板树的一部分的能力。命中允许 Vue 不仅跳过虚拟 DOM 差异，而且完全跳过新 VNode 的创建,复用 Vnode,空间换时间优化。
