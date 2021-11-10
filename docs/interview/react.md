@@ -361,7 +361,98 @@ class App extends React.Component {
 ### Portals(传送门)
 :::tip
 组件默认会按照既定层次嵌套渲染，Portal可以将React节点渲染到指定节点(如Dialog、Tooltip),vue2.x需要用`v-transfer-dom`,Vue3.0x可以用`Teleport`
+1. 父组件overflow:hidden
+2. 父组件z-index值太小
+3. fixed 需要放在body第一层
 :::
+```js
+  render() {
+      // // 正常渲染
+      // return <div className="modal">
+      //     {this.props.children} {/* vue slot */}
+      // </div>
 
+      // 使用 Portals 渲染到 body 上。
+      // fixed 元素要放在 body 上，有更好的浏览器兼容性。
+      return ReactDOM.createPortal(
+          <div className="modal">{this.props.children}</div>,
+          document.body // DOM 节点
+      )
+  }
+```
+### context(上下文)
+:::tip
+React context的api解决的问题是祖先元素与子孙元素的通信问题。
+* 用props太繁琐,层级过深不友好
+* 用redux小题大做
+:::
+```js
+import React from 'react'
+// 创建 Context 填入默认值（任何一个 js 变量）
+const ThemeContext = React.createContext('欧美简约')
+const ThemeContext2 = React.createContext('呃玛西亚')
+// 底层组件 - 函数是组件
+function ThemeLink (props) {
+    // const theme = this.context // 会报错。函数式组件没有实例，即没有 this
+    // 函数式组件可以使用 Consumer(消费)
+    return <ThemeContext.Consumer>
+      { (value) => 
+      <p>当前主题1-{value}
+        <ThemeContext2.Consumer>
+          { (value2) => <span>当前主题2-{value2}</span> }
+        </ThemeContext2.Consumer>
+      </p> 
+      }
+    </ThemeContext.Consumer>
+}
 
-<!-- Teleport -->
+// 底层组件 - class 组件
+class ThemedButton extends React.Component {
+    // 指定 contextType 读取当前的 theme context。
+    // static contextType = ThemeContext // 也可以用 ThemedButton.contextType = ThemeContext
+    render() {
+        const theme = this.context // React 会往上找到最近的 theme Provider，然后使用它的值。
+        console.log('theme', theme)
+        return <div>
+            <p>当前主题-{theme}</p>
+        </div>
+    }
+}
+ThemedButton.contextType = ThemeContext // 指定 contextType 读取当前的 theme context。
+
+// 中间的组件再也不必指明往下传递 theme 了。
+function Toolbar(props) {
+    return (
+        <div style={{background: 'yellow', padding: '10px'}}>
+            中间组件
+            <div style={{background: 'pink'}}>
+              <ThemedButton />
+              <ThemeLink />
+            </div>
+        </div>
+    )
+}
+
+class App extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            theme: '欧美简约'
+        }
+    }
+    render() {
+        return <div style={{background: 'red', padding: '10px'}}>
+          <ThemeContext.Provider value={this.state.theme}>
+              <Toolbar />
+              <button onClick={this.changeTheme}>切换主题</button>
+          </ThemeContext.Provider>
+        </div>
+    }
+    changeTheme = () => {
+        this.setState({
+            theme: this.state.theme === '城乡结合' ? '欧美简约' : '城乡结合'
+        })
+    }
+}
+export default App
+```
