@@ -185,7 +185,7 @@ class StateDemo extends React.Component {
     increase = () => {
         // this.state.count++ // 错误的写法
         // setState 一定要用不可变值了
-        // 只能用setState去修改值，禁止提前修改值，而导致触发shouldComponentUpdate
+        // 只能用setState去修改值，禁止提前修改值，会导致shouldComponentUpdat中nextProps, nextState 相等
         this.setState({
             count: this.state.count + 1 // SCU
         }, ()=>{
@@ -395,6 +395,7 @@ const ThemeContext2 = React.createContext('呃玛西亚')
 function ThemeLink (props) {
     // const theme = this.context // 会报错。函数式组件没有实例，即没有 this
     // 函数式组件可以使用 Consumer(消费)
+    // Context多了很容易导致嵌套地狱。
     return <ThemeContext.Consumer>
       { (value) => 
       <p>当前主题1-{value}
@@ -482,4 +483,131 @@ class App extends React.Component {
     }
 }
 export default App
+```
+### 高阶组件 HOC 
+:::tip
+高阶组件不是一种功能，而是一种模式，类似应该是一个组件工厂、装饰器，获取低阶组件，生成高阶组件,简而言之，高阶组件就是一个函数，它接受一个组件为参数，返回一个新组件(如拉加载数据容器、播放器状态)。
+1. 代码复用，代码模块化
+2. 增删改props
+3. 渲染劫持
+:::
+```js
+// React-redux的connect也是一个高阶组件
+import React from 'react'
+// 高阶组件
+const HOCFactoryMouse = (Component) => {
+  class withMouseComponent extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { x: 0, y: 0 }
+      }
+      handleMouseMove = (event) => {
+        this.setState({
+          x: event.clientX,
+          y: event.clientY
+        })
+      }
+      render() {
+          return (
+            <div style={{ height: '500px', background: 'pink' }} onMouseMove={this.handleMouseMove}>
+              {/* 1. 透传所有 props 2. 增加 mouse 属性 */}
+              {JSON.stringify(this.props)}
+              <Component {...this.props} mouse={this.state}/>
+            </div>
+          )
+      }
+  }
+  return withMouseComponent
+}
+const App = (props) => {
+    const a = props.a
+    const { x, y } = props.mouse // 接收 mouse 属性
+    return (
+        <div style={{ height: '500px' }}>
+            <h1>鼠标坐标: ({x}, {y})</h1>
+            <p>{a}</p>
+        </div>
+    )
+}
+export default HOCFactoryMouse(App) // 返回高阶函数
+// <HOCDemo a="100"/>
+```
+### Render Props
+:::tip
+将一个组件内的 state 作为 props 传递给调用者, 调用者可以动态的决定如何渲染
+1. 接收一个外部传递进来的 props 属性
+2. 将内部的 state 作为参数传递给调用组件的 props 属性方法.
+缺点: 它很容易导致嵌套地狱
+:::
+### HOC vs Render Props 区别
+:::tip
+* HOC: 模式简单，但会增加组件层级
+* Render Props: 代码简洁，学习成本较高，无法在 return 语句外访问数据，它很容易导致嵌套地狱。
+* 按需使用
+:::
+
+### React性能优化
+:::tip
+1. **`shouldComponentUpdate`**(简称SCU): SCU 默认返回true,即React 默认重新渲染所有子组件，必须配合`不可变值` 一起使用，可先不用SCU,有性能问题时再按需使用
+2. **`PureComponent(纯组件)` 和 `React.memo`**:前者类组件，后者函数组组件，原理是，当组件更新时，如果组件的 `props` 和 `state` 都没发生改变， render 方法就不会触发，省去 `Virtual DOM` 的生成和比对过程，达到提升性能的目的。具体就是 React 自动帮我们做了一层浅比较(Object.keys只比较第一层,类似浅拷贝浅比较)
+3. **`immutable.js`不可变值**：
+* React遵循`不可变值`设计理念，中常要深拷贝(性能消耗大)一份数据,再`setState`,使用`immutable`可彻底拥抱`不可变值`,基于共享数据（不是深拷贝）,速度快,但有一定的学习和迁移成本，按需使用。
+* `immutable`数据一种利用结构共享形成的持久化数据结构，一旦有部分被修改，那么将会返回一个全新的对象，并且原来相同的节点会直接共享
+5. 公共组件抽离，如`minxin`(弃用)、高阶组件HOC、Render Props
+:::
+![immutable](../assets/images/interview/39.gif)
+```js
+class {
+  shouldComponentUpdate(nextProps, nextState) {
+      // _.isEqual 做对象或者数组的深度比较（一次性递归到底）
+      // 1.isEqual 是个一次性深度递归到底，所以慎用
+      // 2. react 提供了PureComponent、memo 做浅比较
+      if (_.isEqual(nextProps.list, this.props.list)) {
+          // 相等，则不重复渲染
+          return false
+      }
+      return true // 不相等，则渲染
+  },
+  handleAdd = (name) => {
+    // 正确的用法
+    this.setState({
+      list: [...this.state.list, {
+        id: `id-${Date.now()}`,
+        name,
+      }]
+    })
+    /** 为了演示 SCU ，故意写的错误用法 **/
+    this.state.list.push({ // 直接修改原值，而不是用的setState
+        id: `id-${Date.now()}`,
+        title
+    })
+    // 导致shouldComponentUpdate中 nextProps 和 nextState相当，
+    // 如果正好做了判断，会导致不渲染
+    this.setState({ 
+        list: this.state.list
+    })
+  }
+}
+/**PureComponent**/
+class ListOfWords extends React.PureComponent {
+  render() {
+    return <div>{this.props.words.join(',')}</div>;
+  }
+}
+
+/**memo**/
+function MyComponent(props) {
+  /* 使用 props 渲染 */
+}
+function areEqual(prevProps, nextProps) {
+  /*
+  如果把 nextProps 传入 render 方法的返回结果与
+  将 prevProps 传入 render 方法的返回结果一致则返回 true，
+  否则返回 false
+  */
+}
+export default React.memo(MyComponent, areEqual);
+
+/**immutable**/
+const { Map, List } = require('immutable');const map1 = Map({ a: 1, b: 2, c: 3, d: 4 });const map2 = Map({ c: 10, a: 20, t: 30 });const obj = { d: 100, o: 200, g: 300 };const map3 = map1.merge(map2, obj);// Map { a: 20, b: 2, c: 10, d: 100, t: 30, o: 200, g: 300 }const list1 = List([ 1, 2, 3 ]);const list2 = List([ 4, 5, 6 ]);const list3 = list1.concat(list2, array);
 ```

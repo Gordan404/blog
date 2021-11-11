@@ -763,6 +763,7 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
 3. 通过访问 `$parent` 或者 `$children` 对象来访问组件实例中的方法和数据
 4. Vue 2.3 及以上版本的话还可以使用 `$listeners`、`$attrs` 和 `.sync` 属性
 :::
+* $props：当前组件接收到的 props 对象。Vue 实例代理了对其 props 对象属性的访问。
 * $attrs：当前组件的属性，通俗的讲也就是在组件标签定义的一系列属性，如input的value，placeholder等，但是不包括在当前组件里面定义的props属性
 * $listeners：当前组件监听的事件，通俗的讲也就是在使用组件的时候在标签中定义的事件，如@input，以及一些自定义事件
 * 当前组件中使用`v-bind="$attrs"`、`v-bind="$props"`,`v-on="$listeners"`也就是把之前父组件那里给它的属性再全部传到它的子组件
