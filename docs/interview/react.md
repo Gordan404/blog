@@ -534,18 +534,63 @@ export default HOCFactoryMouse(App) // 返回高阶函数
 ```
 ### Render Props
 :::tip
-将一个组件内的 state 作为 props 传递给调用者, 调用者可以动态的决定如何渲染
+组件接收一个函数，这个函数获取组件的state实现渲染逻辑(例如多个按钮，每个按钮点击会打开不同的Dialog,用Render Props就能写在一块)
 1. 接收一个外部传递进来的 props 属性
 2. 将内部的 state 作为参数传递给调用组件的 props 属性方法.
 缺点: 它很容易导致嵌套地狱
 :::
+```js
+import React from 'react'
+import PropTypes from 'prop-types'
+
+class Mouse extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = { x: 0, y: 0 }
+    }
+  
+    handleMouseMove = (event) => {
+      this.setState({
+        x: event.clientX,
+        y: event.clientY
+      })
+    }
+  
+    render() {
+      return (
+        <div style={{ height: '500px' }} onMouseMove={this.handleMouseMove}>
+            {/* 将当前 state 作为 props ，传递给 render （render 是一个函数组件） */}
+            {this.props.render(this.state)}
+        </div>
+      )
+    }
+}
+Mouse.propTypes = {
+    render: PropTypes.func.isRequired // 必须接收一个 render 属性，而且是函数
+}
+
+const App = (props) => (
+    <div style={{ height: '500px' }}>
+        <p>{props.a}</p>
+        <Mouse render={
+            /* render 是一个函数组件 */
+            ({ x, y }) => <h1>坐标 ({x}, {y})</h1>
+        }/>
+        
+    </div>
+)
+/**
+ * 即，定义了 Mouse 组件，只有获取 x y 的能力。
+ * 至于 Mouse 组件如何渲染，App 说了算，通过 render prop 的方式告诉 Mouse 。
+ */
+export default App
+```
 ### HOC vs Render Props 区别
 :::tip
-* HOC: 模式简单，但会增加组件层级
+* HOC: 模式简单，但会增加组件层级(高级组件嵌套当前组件)
 * Render Props: 代码简洁，学习成本较高，无法在 return 语句外访问数据，它很容易导致嵌套地狱。
 * 按需使用
 :::
-
 ### React性能优化
 :::tip
 1. **`shouldComponentUpdate`**(简称SCU): SCU 默认返回true,即React 默认重新渲染所有子组件，必须配合`不可变值` 一起使用，可先不用SCU,有性能问题时再按需使用
@@ -553,7 +598,7 @@ export default HOCFactoryMouse(App) // 返回高阶函数
 3. **`immutable.js`不可变值**：
 * React遵循`不可变值`设计理念，中常要深拷贝(性能消耗大)一份数据,再`setState`,使用`immutable`可彻底拥抱`不可变值`,基于共享数据（不是深拷贝）,速度快,但有一定的学习和迁移成本，按需使用。
 * `immutable`数据一种利用结构共享形成的持久化数据结构，一旦有部分被修改，那么将会返回一个全新的对象，并且原来相同的节点会直接共享
-5. 公共组件抽离，如`minxin`(弃用)、高阶组件HOC、Render Props
+5. 公共组件抽离,提取公共逻辑，降低耦合度，如`minxin`(弃用)、高阶组件HOC、Render Props
 :::
 ![immutable](../assets/images/interview/39.gif)
 ```js
@@ -611,3 +656,7 @@ export default React.memo(MyComponent, areEqual);
 /**immutable**/
 const { Map, List } = require('immutable');const map1 = Map({ a: 1, b: 2, c: 3, d: 4 });const map2 = Map({ c: 10, a: 20, t: 30 });const obj = { d: 100, o: 200, g: 300 };const map3 = map1.merge(map2, obj);// Map { a: 20, b: 2, c: 10, d: 100, t: 30, o: 200, g: 300 }const list1 = List([ 1, 2, 3 ]);const list2 = List([ 4, 5, 6 ]);const list3 = list1.concat(list2, array);
 ```
+## Redux
+![浅谈React合成](../assets/images/interview/40.png)
+:::tip
+:::
