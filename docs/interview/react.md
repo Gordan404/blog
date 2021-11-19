@@ -595,7 +595,8 @@ export default App
 :::tip
 1. **`shouldComponentUpdate`**(简称SCU): SCU 默认返回true,即React 默认重新渲染所有子组件，必须配合`不可变值` 一起使用，可先不用SCU,有性能问题时再按需使用
 2. **`PureComponent(纯组件)` 和 `React.memo`**:前者类组件，后者函数组组件，原理是，当组件更新时，如果组件的 `props` 和 `state` 都没发生改变， render 方法就不会触发，省去 `Virtual DOM` 的生成和比对过程，达到提升性能的目的。具体就是 React 自动帮我们做了一层浅比较(Object.keys只比较第一层,类似浅拷贝浅比较)
-3. **`immutable.js`不可变值**：
+3. **函数组件**: 当一个组件只返回一个render建议使用函数组件,因为类组件使用的时候要实例化，而函数组件直接执行函数取返回结果即可,提高性能。
+4. **`immutable.js`不可变值**：
 * React遵循`不可变值`设计理念，中常要深拷贝(性能消耗大)一份数据,再`setState`,使用`immutable`可彻底拥抱`不可变值`,基于共享数据（不是深拷贝）,速度快,但有一定的学习和迁移成本，按需使用。
 * `immutable`数据一种利用结构共享形成的持久化数据结构，一旦有部分被修改，那么将会返回一个全新的对象，并且原来相同的节点会直接共享
 5. 公共组件抽离,提取公共逻辑，降低耦合度，如`minxin`(弃用)、高阶组件HOC、Render Props
@@ -657,6 +658,20 @@ export default React.memo(MyComponent, areEqual);
 const { Map, List } = require('immutable');const map1 = Map({ a: 1, b: 2, c: 3, d: 4 });const map2 = Map({ c: 10, a: 20, t: 30 });const obj = { d: 100, o: 200, g: 300 };const map3 = map1.merge(map2, obj);// Map { a: 20, b: 2, c: 10, d: 100, t: 30, o: 200, g: 300 }const list1 = List([ 1, 2, 3 ]);const list2 = List([ 4, 5, 6 ]);const list3 = list1.concat(list2, array);
 ```
 ## Redux
-![浅谈React合成](../assets/images/interview/40.png)
+![Redux](../assets/images/interview/41.jpg)
 :::tip
+1. redux是的诞生是为了给 React 应用提供「可预测化的状态管理」机制。
+2. Redux会将整个应用状态(其实也就是数据)存储到到一个地方，称为store
+3. 这个store里面保存一棵状态树(state tree)
+4. 组件改变state的唯一方法是通过调用store的dispatch方法，触发一个action，这个action被对应的reducer处理，于是state完成更新
+5. 组件可以派发(dispatch)行为(action)给store,而不是直接通知其它组件
+6. 其它组件可以通过订阅store中的状态(state)来刷新自己的视图
+:::
+
+### React组件通讯
+:::tip
+* `props`: [父子组件] 回调函数
+* `Context`: [跨组件层级] 导入并调用`createContext`方法，从结果中解构出 `Provider`, `Consumer` 组件
+* `redux`: redux、mobx等的状态管理工具
+* `evnet Bus`: 事件总线
 :::
