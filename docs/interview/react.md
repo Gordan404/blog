@@ -7,24 +7,6 @@ sidebar: auto
 :::tip
 React是一个简单的javascript UI库，用于构建高效、快速的用户界面。它是一个轻量级库，因此很受欢迎。它遵循组件设计模式、声明式编程范式和函数式编程概念，以使前端应用程序更高效。它使用虚拟DOM来有效地操作DOM。它遵循从高阶组件到低阶组件的单向数据流。
 :::
-### 函数式编程
-:::tip
-函数式编程是声明式编程的一部分。javascript中的函数是第一类公民，这意味着函数是数据，你可以像保存变量一样在应用程序中保存、检索和传递这些函数。
-
-**函数式编程有些核心的概念，如下：**
-* 不可变性(Immutability)
-* 纯函数(Pure Functions)
-* 数据转换(Data Transformations)
-* 高阶函数 (Higher-Order Functions)
-* 递归
-* 组合
-:::
-### Vue React一些区别
-:::tip
-1. `Vue` 定义了很多指令(如v-for、v-if)去实现一些展示，`React` 主要还是依赖JS方法去实现
-2. `Vue` 绑定事件 `Event` 是原生的和DOM事件一样, 而 `React` 是封装组合之后的 `SyntheticBaseEvent` 需要访问`nativeEvent` 才能获取原生`Event`。
-3. `Vue` 使用 `v-model` 语法糖实现双向数据绑定，而`React`则需要自己绑定`onChange` 事件
-:::
 ### React的生命周期
 ![React的生命周期](../assets/images/interview/37.png)
 :::tip
@@ -40,7 +22,7 @@ React是一个简单的javascript UI库，用于构建高效、快速的用户�
 * **`componentDidUpdate`**：它主要用于更新DOM以响应props或state更改。
 * **`componentWillUnmount`**：创建、 更新、 销毁三个阶段，它用于取消任何的网络请求，或删除与组件关联的所有事件监听
 :::
-### React 父子组建生命周期
+### React 父子组件生命周期
 ```js
 // 加载渲染过程
   parent-constructor
@@ -137,8 +119,8 @@ class EventDemo extends React.Component {
 1. 合成事件首先抹平了浏览器之间的兼容问题(如标准事件模型、IE)，另外这是一个跨浏览器原生事件包装器，赋予了跨浏览器开发的能力；
 2. 对于原生浏览器事件来说，浏览器会给监听器创建一个事件对象。如果你有很多的事件监听，那么就需要分配很多的事件对象，造成高额的内存分配问题。但是对于合成事件来说，有一个事件池专门来管理它们的创建和销毁，当事件需要被使用时，就会从池子中复用对象，事件回调结束后，就会销毁事件对象上的属性，从而便于下次复用事件对象
 * **优点**
-1. 兼容所有浏览器，更好的跨平台；
-2. 将事件统一存放在一个数组，避免频繁的新增与删除（垃圾回收）。
+1. 兼容所有浏览器(如标准事件模型、IE)，更好的跨平台(各平台都有自己的事件名)；
+2.挂载到document,将事件统一存放在一个数组,减少内存消耗,避免频繁的新增与解绑（垃圾回收）。
 3. 方便 react 统一管理和事务机制
 :::
 ```js
@@ -165,6 +147,7 @@ React基于Virtual DOM实现了一个SyntheticEvent层（合成事件层），�
 * 同步： 在 React 无法控制的地方，比如原生事件，具体就是在 addEventListener 、setTimeout、setInterval 等事件中，就只能同步更新。
 3. 可能会被合并
 * `setState()` 传递对象就会被合并（类似Object.assign），传递函数则不会被合并
+* setState是否同步，看是否能命中`bacthUpdate`机制，判断`isBatchingUpdates`
 :::
 ```js
 class StateDemo extends React.Component {
@@ -593,10 +576,13 @@ export default App
 :::
 ### React性能优化
 :::tip
-1. **`shouldComponentUpdate`**(简称SCU): SCU 默认返回true,即React 默认重新渲染所有子组件，必须配合`不可变值` 一起使用，可先不用SCU,有性能问题时再按需使用
-2. **`PureComponent(纯组件)` 和 `React.memo`**:前者类组件，后者函数组组件，原理是，当组件更新时，如果组件的 `props` 和 `state` 都没发生改变， render 方法就不会触发，省去 `Virtual DOM` 的生成和比对过程，达到提升性能的目的。具体就是 React 自动帮我们做了一层浅比较(Object.keys只比较第一层,类似浅拷贝浅比较)
-3. **函数组件**: 当一个组件只返回一个render建议使用函数组件,因为类组件使用的时候要实例化，而函数组件直接执行函数取返回结果即可,提高性能。
-4. **`immutable.js`不可变值**：
+1. 渲染列表时加Key
+2. 自定义事件、DOM事件及时销毁
+3. 合理使用异步组件
+4. **`shouldComponentUpdate`**(简称SCU): SCU 默认返回true,即React 默认重新渲染所有子组件，必须配合`不可变值` 一起使用，可先不用SCU,有性能问题时再按需使用
+5. **`PureComponent(纯组件)` 和 `React.memo`**:前者类组件，后者函数组组件，原理是，当组件更新时，如果组件的 `props` 和 `state` 都没发生改变， render 方法就不会触发，省去 `Virtual DOM` 的生成和比对过程，达到提升性能的目的。具体就是 React 自动帮我们做了一层浅比较(Object.keys只比较第一层,类似浅拷贝浅比较)
+6. **函数组件**: 当一个组件只返回一个render建议使用函数组件,因为类组件使用的时候要实例化，而函数组件直接执行函数取返回结果即可,提高性能。
+7. **`immutable.js`不可变值**：
 * React遵循`不可变值`设计理念，中常要深拷贝(性能消耗大)一份数据,再`setState`,使用`immutable`可彻底拥抱`不可变值`,基于共享数据（不是深拷贝）,速度快,但有一定的学习和迁移成本，按需使用。
 * `immutable`数据一种利用结构共享形成的持久化数据结构，一旦有部分被修改，那么将会返回一个全新的对象，并且原来相同的节点会直接共享
 5. 公共组件抽离,提取公共逻辑，降低耦合度，如`minxin`(弃用)、高阶组件HOC、Render Props
@@ -657,7 +643,14 @@ export default React.memo(MyComponent, areEqual);
 /**immutable**/
 const { Map, List } = require('immutable');const map1 = Map({ a: 1, b: 2, c: 3, d: 4 });const map2 = Map({ c: 10, a: 20, t: 30 });const obj = { d: 100, o: 200, g: 300 };const map3 = map1.merge(map2, obj);// Map { a: 20, b: 2, c: 10, d: 100, t: 30, o: 200, g: 300 }const list1 = List([ 1, 2, 3 ]);const list2 = List([ 4, 5, 6 ]);const list3 = list1.concat(list2, array);
 ```
-## Redux
+### React组件通讯
+:::tip
+* `props`: [父子组件] 回调函数
+* `Context`: [跨组件层级] 导入并调用`createContext`方法，从结果中解构出 `Provider`, `Consumer` 组件
+* `redux`: redux、mobx等的状态管理工具
+* `evnet Bus`: 事件总线
+:::
+## Redux 和 React-Redux
 ![Redux](../assets/images/interview/41.jpg)
 :::tip
 1. redux是的诞生是为了给 React 应用提供「可预测化的状态管理」机制。
@@ -667,11 +660,258 @@ const { Map, List } = require('immutable');const map1 = Map({ a: 1, 
 5. 组件可以派发(dispatch)行为(action)给store,而不是直接通知其它组件
 6. 其它组件可以通过订阅store中的状态(state)来刷新自己的视图
 :::
-
-### React组件通讯
+### React-Redux
 :::tip
-* `props`: [父子组件] 回调函数
-* `Context`: [跨组件层级] 导入并调用`createContext`方法，从结果中解构出 `Provider`, `Consumer` 组件
-* `redux`: redux、mobx等的状态管理工具
-* `evnet Bus`: 事件总线
+* **store** store就是把action和reducer联系到一起的对象，store本质上是一个状态树，保存了所有对象的状态。任何UI组件都可以直接从store访问特定对象的状态
+* **Action**  是把数据从应用传到 store 的有效载荷,它是 store 数据的唯一来源,一般来说你会通过 store.dispatch() 将 action 传到 store。
+* **reducer** 指定了应用状态的变化如何响应 actions并发送到 store 的，记住 actions 只是描述了有事情发生了这一事实，并没有描述应用如何更新 state
+* **Provider** 其实就只是一个外层容器，它的作用就是通过配合 connect 来达到跨层级传递数据。使用时只需将Provider定义为整个项目最外层的组件，并设置好store。那么整个项目都可以直接获取这个store。它的原理其实是通过React中的[Context]()来实现的
+* **connect** 的作用是连接React组件与 Redux store，它包在我们的容器组件的外一层，它接收上面 Provider 提供的 store 里面的 state 和 dispatch，传给一个构造函数，返回一个对象，以属性形式传给我们的容器组件
+1. `mapStateToProps` 的作用是将store里的state
+2. `mapDispatchToProps` 的作用是将store里的action（操作数据的方法）绑定到指定组件的props中
+:::
+```js
+/** Redux **/
+// Redux主要通过subscribe订阅事件
+// constructor(){
+//   this.state = store.getState();
+// }
+store.subscribe(listener);
+function listerner() {
+  let newState = store.getState();
+  component.setState(newState);   
+}
+/** react-redux **/
+// App.js
+import store from './reducers'
+import App from './components/App'
+import { Provider } from 'react-redux'
+// Provider:提供器，将store提供给子组件使用
+export default function () {
+    return <Provider store={store}>
+        <App />
+    </Provider>
+}
+// store.js
+const store = createStore(reducers)
+// const defaultState = {
+  name: 'gordanlee',
+  list: [1,2,3,4]
+}
+// reducers/userInfo
+const userInfo = (state = defaultState, action) => {
+  // state: 上一次store中的数据 action:
+  switch (action.type) {
+    case 'SET_NAME':
+      // 注意，返回不可变数据,reducers 可以接受state,不可以直接修改
+      return {
+        ...state,
+        name: action.value
+      }
+    default:
+      return state
+  }
+}
+export default userInfo
+// actions
+// 设置名字
+export const SET_NAME = (value) => {
+  return {
+    type: 'SET_NAME',
+    value
+  }
+}
+// reducers
+const reducers = combineReducers({reducers})
+// App.js
+import React, { Component } from 'react'
+import { connect } from 'react-redux'
+import { SET_NAME } from '../actions'
+class Form extends Component {
+  constructor(props){
+    super(props)
+  }
+  render() {
+    return (
+      <div>
+        <div>
+          <input value={this.props.userInfo.name} onChange={this.props.handleSetName} />
+          <button>提交</button>
+        </div>
+        <ul>
+          <li>{this.props.userInfo.name}</li>
+        </ul>
+      </div>
+    )
+  }
+}
+const mapStateToProps = (state) => { // 把store中的数据映射成组件的Props
+  return {
+    userInfo: state.userInfo
+  }
+}
+// store.dispatch方法映射到Props中
+const mapDispatchToProps = (dispatch) => {
+  return {
+    handleSetName(e){
+      dispatch(SET_NAME(e.target.value))
+    }
+  }
+}
+// connect 让组件和store做连接
+export default connect(mapStateToProps, mapDispatchToProps)(Form)
+```
+### Redux 中间件
+![中间件](../assets/images/interview/42.jpg)
+:::tip
+`dispatch`一个`action`之后，到达`reducer`之前，进行一些额外的操作，就需要用到`middleware`。 
+可以利用 `Redux middleware` 来进行日志记录、创建崩溃报告、调用异步接口或者路由等等,Redux store默认仅支持同步数据流,使用 thunk中间件 可以帮助在 Redux 应用中实现 异步的reducer(redux-thunk、redux-promise、redux-saga)
+1. 调动dispatch派发一个新 action 对象
+2. 调用 getState 获得当前 Redux Store 上的状态
+3. 调用 next 告诉 Redux 当前中间件工作完毕，让 Redux 调用下一个中间件
+4. 访问 action 对象 action 上的所有数据
+:::
+函数柯里化[函数柯里化](https://www.jianshu.com/p/2975c25e4d71)
+```js
+// 函数柯里化 多参函数->单参函数
+// 在官方的示例中，有一个logger实现的示例
+const logger = store => next => action =>{
+    console.log('prev state',store.getState()) //获取状态数据
+    console.log('dispatch',action);
+    let result = next(action);
+    console.log('next state',store.getState());
+    return result;
+}
+
+function createThunkMiddleware(extraArgument) {
+  return ({ dispatch, getState }) => next => action => {
+    if (typeof action === 'function') {
+      return action(dispatch, getState, extraArgument);
+    }
+    return next(action);
+  };
+}
+const thunk = createThunkMiddleware();
+thunk.withExtraArgument = createThunkMiddleware;
+export default thunk;
+```
+## React 原理
+### 函数式编程
+:::tip
+函数式编程是声明式编程的一部分。javascript中的函数是第一类公民，这意味着函数是数据，你可以像保存变量一样在应用程序中保存、检索和传递这些函数。
+**函数式编程有些核心的概念，如下：**
+* 不可变性(Immutability)
+* 纯函数(Pure Functions)
+* 数据转换(Data Transformations)
+* 高阶函数 (Higher-Order Functions)
+* 递归
+* 组合
+:::
+### Vdom 和 diff算法
+* 参照vue Vdom 和 diff算法, 两者实现vdom细节都不同，核心概念和实现思路一致。
+### JSX本质
+:::tip
+JSX等同于Vue模板,Vue模板不是html
+* React.createElement 即h函数，返回vnode
+* 第一个参数，可能是组件，也可能是html tag
+* 组件名首字母必须大写（react规定）
+:::
+```js
+React.createElement("h1", {className: "main", onClick: (){}}, "内容" || children);
+// 和vue 不同react子组可以数组[children]、也可以单个单个传递
+React.createElement('div', null, clild1, clild2, clild4) 
+React.createElement('div', null, []) 
+// 第一个参数是组件
+React.createElement(List, null, []) 
+// JSX(可以使用babel在线转换试试)
+const url = "../a.png";
+const list = [1,2,3]
+const imgElem = <div class="container">
+        		 {list.map(()=>{
+          			<span>test</span>
+       			 })} 
+        		 <img src={url} />
+        	    </div>
+// 
+const url = "../a.png";
+const list = [1, 2, 3];
+const imgElem = /*#__PURE__*/React.createElement("div", {
+  class: "container"
+}, list.map(() => {
+  /*#__PURE__*/
+  React.createElement("span", null, "test");
+}), /*#__PURE__*/React.createElement("img", {
+  src: url
+}));
+```
+### setState 和 batchUpdate
+![batchUpdate](../assets/images/interview/43.jpg)
+:::tip
+* 有时异步(普通使用),有时同步(setTimeout、原生DOM事件)
+* 有时合并(对象形式),有时不合并(函数形式)
+* setState是否同步，看是否能命中bacthUpdate机制，判断isBatchingUpdates
+* bacthUpdate可命中 生命周期、React中注册的事件等React可以“管理”的入口
+:::
+```js
+  componentDidMount() {
+    // 开始：处于batchUpdate
+    // isBatchingUpdates = true
+    this.setState({
+      // 异步
+      count: this.state.count + 1
+    }); 
+    setTimeout(() => {
+     // 在setTimeout执行时,isBatchingUpdates已经false
+      // 同步
+      this.setState({
+        count: this.state.count + 1
+      });
+    }, 0);
+    // 结束
+    // isBatchingUpdates = false
+  }
+```
+### transaction(交易)事物机制
+![transaction](../assets/images/interview/45.png)
+![transaction](../assets/images/interview/44.png)
+### 组件渲染和更新过程
+:::tip
+**渲染**
+1. props state
+2. render()生成vnode
+3. patch(element, vnode)
+**更新过程**
+1. setState(newState) ==> dirtyComponents(可能有子组件)
+setState修改之后会生成dirtyComponents(可能是当前组件或者子组件)，遍历它生成newVnode
+2. render()生成newVnode
+3. patch(element, vnode)
+:::
+### React-fiber
+:::tip
+**更新的分为两个阶段**
+1. reconciliation(协调) 阶段 - 执行diff算法，纯JS计算
+2. commit阶段 - 将diff结果渲染DOM
+**可能会有性能问题**
+1. JS是单线程，且和DOM渲染共用一个线程
+2. 当组件足够复杂，组件更新时计算和渲染都压力大
+3. 当同是再有DOM操作需求(动画,鼠标拖拽等),将卡顿
+**解决方案 fiber**
+* 将reconciliation阶段进行任务拆分(commit阶段无法拆分)
+* DOM需要渲染时暂停，空闲时恢复重启各个子任务的执行
+* window.requestIdleCallback
+:::
+### Vue 和 React一些区别
+:::tip
+**相同点**
+1. 都支持组件化
+2. 都是数据驱动视同
+3. 都使用vdom操作dom
+**不同点**
+1. React 使用JSX拥抱JS, Vue使用模板拥抱html
+2. React函数式编程,Vue声明式编程
+3. React更多需要自力更生(手动挡)，Vue把想要的都给你
+**细的**
+4. `Vue` 定义了很多指令(如v-for、v-if)去实现一些展示，`React` 主要还是依赖JS方法去实现
+5. `Vue` 绑定事件 `Event` 是原生的和DOM事件一样, 而 `React` 是封装组合之后的 `SyntheticBaseEvent` 需要访问`nativeEvent` 才能获取原生`Event`。
+6. `Vue` 使用 `v-model` 语法糖实现双向数据绑定，而`React`则需要自己绑定`onChange` 事件
 :::

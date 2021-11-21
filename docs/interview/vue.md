@@ -843,7 +843,7 @@ keep-alive 是 Vue 内置的一个组件，可以实现组件缓存，当组件�
 * 常用的两个属性 include/exclude/max，允许组件有条件的进行缓存。
 * 两个生命周期 activated/deactivated，用来得知当前组件是否处于活跃状态。
 * keep-alive 的中还运用了 LRU(最近最少使用) 算法，选择最近最久未使用的组件予以淘汰。
-1. 在首次加载被包裹组建时，由keep-alive.js中的render函数可知，vnode.componentInstance的值是undfined，keepAlive的值是true，因为keep-alive组件作为父组件，它的render函数会先于被包裹组件执行；那么只执行到i(vnode,false)，后面的逻辑不执行；
+1. 在首次加载被包裹组件时，由keep-alive.js中的render函数可知，vnode.componentInstance的值是undfined，keepAlive的值是true，因为keep-alive组件作为父组件，它的render函数会先于被包裹组件执行；那么只执行到i(vnode,false)，后面的逻辑不执行；
 2. 再次访问被包裹组件时，vnode.componentInstance的值就是已经缓存的组件实例，那么会执行insert(parentElm, vnode.elm, refElm)逻辑，这样就直接把上一次的DOM插入到父元素中。
 :::
 ```js

@@ -575,3 +575,80 @@ function insertSort(arr) {
   }
   findMaxLetter(arr)
 ```
+
+### 最长回文子串
+```js
+/**
+输入：s = "babad"
+输出："bab"
+解释："aba" 同样是符合题意的答案
+**/
+// 中心扩展法
+var longestPalindrome = function(s) {
+    let result = s[0] || "";
+    for (let i = 0; i < s.length; i++) {
+        for (let j = 1; j <= 2; j++) { //偶数奇数回文串
+            let left = i, right = i + j;
+            while(left >= 0 && right < s.length && s[left] === s[right]) {
+                left--, right++; //向外扩展直到两端不相同
+            };
+            let length = right - left - 1; //(right - 1) - (left + 1) + 1
+            if (length > result.length) {
+                result = s.substr(left + 1, length);
+            }
+        }
+    }
+    return result;
+};
+```
+### 无重复字符的最长子串
+```js
+/**
+输入: s = "abcabcbb"
+输出: 3 
+解释: 因为无重复字符的最长子串是 "abc"，所以其长度为 3。
+**/
+var lengthOfLongestSubstring = function(s) {
+    let arr = [], max = 0
+    for(let i = 0; i < s.length; i++) {
+        let index = arr.indexOf(s[i])
+        if(index !== -1) {
+            arr.splice(0, index+1);
+        }
+        arr.push(s.charAt(i))
+        max = Math.max(arr.length, max) 
+    }
+    return max
+};
+
+var lengthOfLongestSubstring = function(s) {
+    let map = new Map(), max = 0
+    for(let i = 0, j = 0; j < s.length; j++) {
+        if(map.has(s[j])) {
+            i = Math.max(map.get(s[j]) + 1, i)
+        }
+        max = Math.max(max, j - i + 1)
+        map.set(s[j], j)
+    }
+    return max
+};
+```
+### 两数之和
+```js
+/**
+输入：nums = [2,7,11,15], target = 9
+输出：[0,1]
+解释：因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。
+**/
+var twoSum = function(nums, target) {
+    let map = new Map();
+    for(let i = 0, len = nums.length; i < len; i++){
+        if(map.has(target - nums[i])){
+            return [map.get(target - nums[i]), i];
+        }else{
+            map.set(nums[i], i);
+        }
+    }
+    return [];
+};
+```
