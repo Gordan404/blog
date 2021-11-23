@@ -103,11 +103,11 @@ Function.prototype._apply = function(context) {
 }
 
 // bind 这个方法在IE6~8下不兼容
-Function.prototype._bind= function(obj){
-    var _self = this, args = arguments;
-    return function() {
-        _self.apply(obj, Array.prototype.slice.call(args, 1));
-    }
+Function.prototype._bind = function() {
+  var _self = this, args = [...arguments];
+  return function() {
+    return _self.apply(args[0], args.slice(1));
+  }
 }
 function foo() {
   console.log(this.age);
@@ -455,7 +455,28 @@ _eventBus.emit('say', { name: 'gordanle'} )
     }
 })()
 ```
-
+### 函数柯里化
+```js
+function curry(fn, args) {
+    var length = fn.length;
+    var args = args || [];
+    return function(){
+        newArgs = args.concat(Array.prototype.slice.call(arguments));
+        if (newArgs.length < length) {
+          return curry.call(this,fn,newArgs);
+        }else{
+          return fn.apply(this,newArgs);
+        }
+    }
+}
+function multiFn(a, b, c) {
+    return a * b * c;
+}
+var multi = curry(multiFn);
+console.log(multi(2)(3)(4)); //24
+console.log(multi(2,3,4)); //24
+console.log(multi(2)(3,4)); //24
+```
 ### 手写原生Ajax请求
 ```js
 // 1.创建XMLHttpRequest对象
@@ -651,4 +672,186 @@ var twoSum = function(nums, target) {
     }
     return [];
 };
+```
+### 给定一个整数数组，判断是否存在重复元素
+```js
+/**
+示例 1:
+输入: [1,2,3,1]
+输出: true
+示例 2:
+输入: [1,2,3,4]
+输出: false
+示例 3:
+输入: [1,1,1,3,3,4,3,2,4,2]
+输出: true
+**/
+function isRepeat(arr) {
+  for (let index = 0; index < array.length; index++) {
+    if(map.has(array[index])){
+      console.log('array[index]', index, array[index])
+      return true
+    } else {
+      map.set(array[index])
+    }
+  }
+  return false
+}
+// 双指针
+function isRepeat(array) {
+  let map = new Map();
+  let newStartIdx = 0;
+  let newEndIdx = array.length - 1;
+  while (newStartIdx <= newEndIdx) {
+    const sIndex = newStartIdx++;
+    const eIndex = newEndIdx--;
+    if(!map.has(array[sIndex])){
+      map.set(array[sIndex])
+    } else {
+      return true
+    }
+    // 下标相等
+    if(sIndex === eIndex) { return false }
+    if(!map.has(array[eIndex])){
+      map.set(array[eIndex])
+    } else {
+      return true
+    }
+  }
+  return false
+}
+```
+## 链表
+:::tip
+1、链表是链式存储结构，数组是顺序存储结构
+2、链表通过指针连接元素与元素，而数组则是把所有元素按顺序进行存储
+3、链表的插入和删除元素比较简单，不需要移动元素，且较为容易实现长度的扩充，但是查询元素比较困难，数组是查询比较快，但是删除和增加会比较麻烦。
+:::
+### 链表和数组区别
+:::tip
+链表是链式存储结构，数组是顺序存储结构；链表通过指针连接元素，而数组则是把所有元素按顺序进行存储；链表插入和删除元素不需要移动元素，数组删除和增加元素需要移动元素。
+:::
+### 单向链表
+:::tip
+* 每个链表都有一个头指针，指向第一个节点，没节点则指向NULL,最后一个节点的指针指向空（NULL）
+* 每个节点(node)都由数据本身和一个指向后续节点的指针组成
+* 整个链表的存取必须从头指针开始，头指针指向第一个节点
+:::
+```js
+  /**声明一个链表节点**/
+  class Node {
+    constructor(value) {
+      this.value = value
+      this.next = null // 默认null
+    }
+  }
+  class NodeList {
+    constructor(arr) {
+      // 声明头部节点
+      let head = new Node(arr.shift())
+      let next = head
+      arr.forEach(item=>{
+        next.next = new Node(item)
+        next = next.next
+      })
+       // 链表只暴露一个head
+      return head
+    }
+  }
+```
+### 给定一个排序链表，删除所有重复的元素，使得每个元素只出现一次
+```js
+/**
+示例 1:
+输入: 1->1->2
+输出: 1->2
+示例 2:
+输入: 1->1->2->3->3
+输出: 1->2->3
+**/
+  const list = new NodeList([1, 2, 3, 3,4,4])
+  function deleteDuplicates(head) {
+    var cur = head
+    while (cur && cur.next !== null) {
+      if(cur.value === cur.next.value) {
+        cur.next = cur.next.next
+      }
+      cur = cur.next
+    }
+    return head
+  }
+```
+### 分割链表 
+```js
+/**
+给你一个链表的头节点 head 和一个特定值 x ，请你对链表进行分隔，使得所有 小于或等于 x 的节点都出现在 x 的节点之前,大于位置不变。
+输入：head = [1,4,3,2,5,2], x = 3
+输出：[1,2,2,4,3,5]
+输入：head = [2,1], x = 2
+输出：[1,2]
+**/
+var partition = function(head, x) {
+    let left = new Node(0); // 初始化一个空节点，初始赋值为0，指针指向为list
+    const leftHead = left;
+    let right = new Node(0);
+    const rightHead = right;
+    while (head !== null) {
+        if (head.value < x) {
+            left.next = head;
+            left = left.next;
+        } else {
+            right.next = head;
+            right = right.next;
+        }
+        head = head.next;
+    }
+    right.next = null;
+    left.next = rightHead.next;
+    return leftHead.next;
+};
+const list = new NodeList([1, 4, 3, 2, 5, 2])
+console.log(partition(list, 3))
+```
+### 单联保反转
+```js
+var reverseList = function(head) {    
+    let p1 = head;
+    let p2 = null;
+    while(p1){
+        const temp = p1.next;
+        p1.next = p2;
+        p2 = p1;
+        p1 = temp;  
+    }
+    return p2;
+}
+```
+## 二叉树
+
+### 翻转一棵二叉树
+```js
+/**
+示例：
+输入：
+   4
+  / \
+ 2   7
+/ \ / \
+1 3 6  9
+输出：
+   4
+  / \
+ 7   2
+/ \ / \
+3 1 9  6
+**/
+var fn = function(node){
+    if(node.left === null && node.right === null) return node
+    var t = node.left
+    node.left = node.right
+    node.right = t
+    fn(node.left)
+    fn(node.right)
+    return node
+}
 ```

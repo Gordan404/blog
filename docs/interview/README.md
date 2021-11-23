@@ -767,9 +767,9 @@ console.log(newObj.name);     // 输出张三
 console.log(newObj.age);      // 输出23
 console.log(newObj.job.money);// 输出12，不受影响
 ```
-### ES6
+## ES6
 本章节只介绍ES6常考知识点，更多基础知识请直接跳转至[你不知道的JavaScript(中)](/books/javascript/know-down.md)
-#### var、let和const的区别
+### var、let和const的区别
 ::: tip
 1. `var`声明的变量会提升到作用域的顶部，而`let`和`const`不会进行提升
 2. `var`声明的全局变量会被挂载到全局`window`对象上，而`let`和`const`不会
@@ -860,7 +860,7 @@ bar(1,2,3,4,5);
 foo(1,2,3,4,5)
 ```
 
-#### 解构赋值
+### 解构赋值
 ::: tip
 常用的解构赋值，有如下两种情况：<br/>
 1. 对象的解构
@@ -899,7 +899,7 @@ console.log(A,B,c); // 输出1,2,3
 console.log(X,Y,Z); // 输出4,5,6
 ```
 
-#### 字符串模板
+### 字符串模板
 ::: tip
 `${内容}`：字符串模板里的内容可以是变量、函数调用以及表达式。
 :::
@@ -919,7 +919,7 @@ console.log(str);     // 输出:我叫：why,我的年龄是：23，我的地址
 console.log(newStr);  // 输出:我叫：why,我的年龄是：23，我的地址是：广州
 ```
 
-#### map和set结构
+### map和set结构
 
 **Map结构：** 对象是创建无序键值对数据结构映射的主要机制，在ES6之前，对象的属性只能是字符串，在ES6之后，`Map`结构允许使用对象、数组等作为键。`Map`结构的方法或者属性如下：
 
@@ -1044,7 +1044,7 @@ console.log(diff1);    // 输出：1,2,3
 console.log(diff2);    // 输出：6,7
 ```
 
-#### Proxy能干什么
+### Proxy能干什么
 在`Vue2.0+`的版本中，`Vue`使用`Object.definedProperty()`方法来实现数据的响应式，在`Vue3.0`的开发计划中，作者计划使用ES6新增加的`Proxy`代理来实现数据的响应式，它相比于`Object.definedProperty()`有如下几个特点： <br/>
 1. `Proxy`可以一次性为所有属性实现代理，无需遍历，性能更佳
 2. `Proxy`能监听到以前使用`Object.definedProperty()`监听不到的数据变动。
@@ -1073,7 +1073,7 @@ p.a = 2;        // 监听到a属性的改变，其值为2
 console.log(a); // 监听到获取属性a,其值为2
 ```
 
-#### 数组的map、filter和reduce的区别
+### 数组的map、filter和reduce的区别
 
 **map：** `map`方法的作用是生成一个新数组(把原数组中的所有元素做一些变动，放进新数组中)
 ```js
@@ -1096,16 +1096,16 @@ var sum = arr.reduce((account, current) => {
 console.log(sum); // 21
 ```
 
-### JavaScript异步
+## JavaScript异步
 
-#### 并发和并行
+### 并发和并行
 并行和并发是两个概念，容易混淆是因为并行和并发在中文意思上相近，其实在英文中，这是完全不相同的东西，并行(parallelism)、并发(concurrency)
 ::: tip 概念理解
 并行(parallelism)：是微观概念，假设CPU有两个核心，则我们就可以同时完成任务A和任务B，同时完成多个任务的情况就可以称之为并行。<br/>
 并发(concurrency)：是宏观概念，现在有任务A和任务B，在一段时间内，通过任务之间的切换完成这两个任务，这种情况称之为并发。
 :::
 
-#### 回调函数
+### 回调函数
 回调函数广泛存在于我们所编写的`JavaScript`代码中，它表现在事件绑定，Ajax请求或者其他的情况下，一个回调函数可表现成如下形式
 ```js
 ajax(url, () => {
@@ -1126,7 +1126,7 @@ ajax(firstUrl, () => {
 })
 ```
 
-#### Generator
+### Generator
 在ES6之前，一个函数一旦执行将不会被中断，一直到函数执行完毕，在ES6之后，由于`Generator`的存在，函数可以暂停自身，待到合适的机会再次执行。用`Generator`可以解决回调地狱。
 ```js
 function *fetch() {
@@ -1140,7 +1140,7 @@ var result2 = it.next();
 var result3 = it.next();
 ```
 
-#### Promise
+### Promise
 `Promise`翻译过来就是承诺的意思，`Promise`一共有三种状态：`pending(等待中)`、`resolve(完成)`和`reject(拒绝)`，这个承诺意味着在将来一定会有一个表决，并且只能表决一次，表决的状态一定是`resolve(完成)`或者`reject(拒绝)`，一个`Promise`可能会是如下的形式：
 ```js
 // 普通的Promise
@@ -1190,7 +1190,7 @@ Promise.race([p2,p1,p3]).then((res) => {
 ```
 
 
-#### async/await
+### async/await
 如果一个方法前面加上了`async`，那么这个方法就会返回一个`Promise`，`async`就是将函数用`Promise.resolve()`包裹了下，并且`await`只能配合`async`使用，不能单独出现。一个`async/await`可能会是如下的形式：
 ```js
 // 普通的async/await
@@ -1209,7 +1209,7 @@ async function fetch() {
 fetch();
 ```
 
-#### setInterval、setTimeout和requestAnimationFrame
+### setInterval、setTimeout和requestAnimationFrame
 **setTimeout** `setTimeout`延时执行某一段代码，但`setTimeout`由于`EventLoop`的存在，并不百分百是准时的，一个`setTimeout`可能会表示如下的形式：
 ```js
 // 延时1s之后，打印hello,world
@@ -1243,9 +1243,9 @@ function render() {
 //第一帧渲染
 window.requestAnimationFrame(render);
 ```
-### EventLoop事件循环
+## EventLoop事件循环
 
-#### 进程和线程
+### 进程和线程
 ::: tip
 `JavaScript`是单线程执行的，在`JavaScript`运行期间，有可能会阻塞UI渲染，这在一方面说明`JavaScript`引擎线程和UI渲染线程是互斥的。`JavaScript`被设计成单线程的原因在于，`JavaScript`可以修改DOM，如果在`JavaScript`工作期间，UI还在渲染的话，则可能不会正确渲染DOM。单线程也有一些好处，如下：
 1. 节省内存空间
@@ -1259,14 +1259,14 @@ window.requestAnimationFrame(render);
 一个线程使用某些共享内存时，其他线程必须等它结束，才能使用这一块内存,如果其他线程使用，就加上一把锁-"互斥锁"，防止多个线程同时读写某一块内存区域。
 :::
 
-#### 执行栈
+### 执行栈
 ::: tip
 可以把执行栈看成是一个存储函数调用的栈结构，遵循先进后出的原则，一个执行栈可能表现如下：
 :::
 
 ![执行栈](../assets/images/interview/5.gif)
 
-#### EventLoop
+### EventLoop
 上面讲到函数会在执行栈中执行，那么当遇到异步代码后，该如何处理呢？其实当遇到异步代码的时候，会被挂起在Task队列中，一旦执行栈为空，就会从Task中拿出需要执行的代码执行，所以本质上讲JS中的异步还是同步行为。
 
 ![EventLoop](../assets/images/interview/6.png)
@@ -1305,5 +1305,9 @@ console.log(5);
 5. 宏任务队列中首先执行同步任务，再次遇到微任务，放入微任务队列中，输出1
 6. 同步任务执行完毕，执行微任务队列，输出2
 7. 微任务队列执行完毕，执行宏任务队列`setTimeout`，输出3
-
-
+### 为什么要区分微任务和宏任务
+:::tip
+* 区分微任务和宏任务是为了将异步队列任务划分优先级，通俗的理解就是为了插队。
+* 一个 Event Loop，Microtask 是在 Macrotask 之后调用，Microtask 会在下一个 Event Loop 之前执行调用完，并且其中会将 Microtask 执行当中新注册的 Microtask 一并调用执行完，然后才开始下一次 Event Loop，所以如果有新的 Macrotask 就需要一直等待，等到上一个 Event Loop 当中 Microtask 被清空为止。由此可见，我们可以在下一次 Event Loop 之前进行插队。
+* 如果不区分 Microtask 和 Macrotask，那就无法在下一次 Event Loop 之前进行插队，其中新注册的任务得等到下一个 Macrotask 完成之后才能进行，这中间可能你需要的状态就无法在下一个 Macrotask 中得到同步
+:::
