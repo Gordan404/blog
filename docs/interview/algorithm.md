@@ -812,7 +812,7 @@ var partition = function(head, x) {
 const list = new NodeList([1, 4, 3, 2, 5, 2])
 console.log(partition(list, 3))
 ```
-### 单联保反转
+### 单链表的反转
 ```js
 var reverseList = function(head) {    
     let p1 = head;

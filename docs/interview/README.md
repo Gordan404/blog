@@ -1311,3 +1311,34 @@ console.log(5);
 * 一个 Event Loop，Microtask 是在 Macrotask 之后调用，Microtask 会在下一个 Event Loop 之前执行调用完，并且其中会将 Microtask 执行当中新注册的 Microtask 一并调用执行完，然后才开始下一次 Event Loop，所以如果有新的 Macrotask 就需要一直等待，等到上一个 Event Loop 当中 Microtask 被清空为止。由此可见，我们可以在下一次 Event Loop 之前进行插队。
 * 如果不区分 Microtask 和 Macrotask，那就无法在下一次 Event Loop 之前进行插队，其中新注册的任务得等到下一个 Macrotask 完成之后才能进行，这中间可能你需要的状态就无法在下一个 Macrotask 中得到同步
 :::
+
+### 垃圾回收 or 内存泄漏
+```js
+// 1.全局变量的使用导致无法被销毁
+function foo () {
+  barA = 'a'; // 无声明写法，升为全局变量 ==== window.barA
+  this.barB = 'b' ; // 全局变量 ==== window.barA
+  return barA + barB
+}
+// 即便foo被销毁了， barB、barA 依然存在
+// 2. 定时器的存在
+var ajaxData = fetchData();
+setInterval(function(){
+  // dom操作
+  // 使用了ajax
+}, 5000)
+// 3.闭包
+function makeAdder(x) {
+  let z = 1;
+  return function(y) {
+    return x + y + z;
+  }
+}
+var add5 = makeAdder(5);
+console.log(add5(2)) // 5 + 2 + 1 =8 // 变量常驻内存
+// 4. dom操作
+// 5. 事件操作
+// 放入熟组中，数组执行之后，依然存在引用
+// 解决方案
+// 即使清理引用（dom、闭包、定时器）,减少全局变量，开启严格模式;
+```

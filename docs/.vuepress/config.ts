@@ -53,6 +53,10 @@ export default defineUserConfig<DefaultThemeOptions>({
             link: '/interview/vue.md'
           },
           {
+            text: '跨平台及小程序',
+            link: '/interview/native.md'
+          },
+          {
             text: 'React知识点及常考',
             link: '/interview/react.md'
           },
