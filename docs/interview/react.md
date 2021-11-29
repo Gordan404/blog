@@ -1,11 +1,18 @@
 ---
 sidebar: auto
 ---
-# 前端面试指北
+# 组前端进阶指北
 ## React基础
 ### 什么是 React
 :::tip
-React是一个简单的javascript UI库，用于构建高效、快速的用户界面。它是一个轻量级库，因此很受欢迎。它遵循组件设计模式、声明式编程范式和函数式编程概念，以使前端应用程序更高效。它使用虚拟DOM来有效地操作DOM。它遵循从高阶组件到低阶组件的单向数据流。
+* React是Facebook 开发的前端JavaScript库
+* V层：react并不是完整的MVC框架，而是MVC中的C层
+* 虚拟DOM：react引入虚拟DOM，每当数据变化通过reactdiff运算，将上一次的虚拟DOM与本次渲染的DOM进行对比，仅仅只渲染更新的，有效减少了DOM操作
+* JSX语法：js+xml，是js的语法扩展，编译后转换成普通的js对象
+* 组件化思想：将具有独立功能的UI模块封装为一个组件，而小的组件又可以通过不同的组合嵌套组成大的组件，最终完成整个项目的构建
+* 单向数据流：指数据的流向只能由父级组件通过props讲数据传递给子组件，不能由子组件向父组件传递数据
+* 要想实现数据的双向绑定只能由子组件接收父组件props传过来的方法去改变父组件数据，而不是直接将子组件数据传给父组件
+* 生命周期：简单说一下生命周期：Mounting(挂载)、Updateing(更新)、Unmounting(卸载)
 :::
 ### React的生命周期
 ![React的生命周期](../assets/images/interview/37.png)
@@ -226,6 +233,12 @@ class StateDemo extends React.Component {
     }
 }
 ```
+### 组件的状态(state)和属性(props)之间有何不同
+:::tip
+* State 是一种数据结构，用于组件挂载时所需数据的默认值。State 可能会随着时间的推移而发生突变，但多数时候是作为用户事件行为的结果
+* Props(properties 的简写)则是组件的配置。props 由父组件传递给子组件，并且就子组件而言，props 是不可变的
+* 组件不能改变自身的 props，但是可以把其子组件的 props 放在一起(统一管理)
+:::
 ## React 进阶
 ### 受控和非受控组
 :::tip
@@ -280,7 +293,7 @@ class App extends React.Component {
     }
 }
 ```
-### 类组件和函数组件之间的区别
+### 类组件和函数组件(无状态)之间的区别
 :::tip
 * 类组件: 可以使用其他特性，如状态 state 和生命周期钩子。
 * 函数组件: 当组件只是接收 props 渲染到页面时，就是无状态组件，就属于函数组件，也被称为哑组件或展示组件
@@ -808,7 +821,15 @@ export default thunk;
 * 组合
 :::
 ### Vdom 和 diff算法
+:::tip
+diff（翻译差异）：计算一棵树形结构转换成另一棵树形结构的最少操作
 * 参照vue Vdom 和 diff算法, 两者实现vdom细节都不同，核心概念和实现思路一致。
+1. 把树形结构按照层级分解，只比较同级元素
+2. 给列表结构的每个单元添加唯一的 key 属性，方便比较
+3. React 只会匹配相同 class 的 component（这里面的 class 指的是组件的名字）
+4. 合并操作，调用 component 的 setState 方法的时候, React 将其标记为 dirty.到每一个事件循环结束, React 检查所有标记 dirty 的 component 重新绘制
+5. 选择性子树渲染。开发人员可以重写 shouldComponentUpdate 提高 diff 的性能
+:::
 ### JSX本质
 :::tip
 JSX等同于Vue模板,Vue模板不是html
@@ -877,6 +898,9 @@ const imgElem = /*#__PURE__*/React.createElement("div", {
 ### 组件渲染和更新过程
 :::tip
 **渲染**
+* 当页面一打开，就会调用render构建一棵DOM树
+* 当数据发生变化（ state | props ）时，就会再渲染出一棵DOM树
+* 此时，进行diff运算，两棵DOM树进行差异化对比，找到更新的地方进行批量改动
 1. props state
 2. render()生成vnode
 3. patch(element, vnode)

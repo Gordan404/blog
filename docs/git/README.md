@@ -237,5 +237,10 @@ $ git branch -d xxx
 `-d`小写的参数d，再删除时会被提示，改分支没有合并，无法删除<br/>
 `-D`大写的参数D，代表强制删除
 :::
-
-CC
+### fetch、merge、pull的区别
+:::tip
+pull相当于git fetch 和git merge，即更新远程仓库的代码到本地仓库，然后将内容合并到当前分支
+git fetch：相当于是从远程获取最新版本到本地，不会自动merge
+git merge：将内容合并到当前分支
+git pull：相当于是从远程获取最新版本并merge到本地
+:::

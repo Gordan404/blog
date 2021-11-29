@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 前端面试指北
+# 组前端进阶指北
 
 ## webpack相关
 ### CommonJs、AMD、CMD、ES Module、UMD
@@ -109,7 +109,6 @@ if(isDev) {
 * **编译模块：** 递归中根据文件类型和`loader`配置，调用所有配置的loader对文件进行转换，再找出该模块依赖的模块，再递归本步骤直到所有入口依赖的文件都经过了本步骤的处理；
 * **完成模块编译并输出：** 递归完事后，得到每个文件结果，包含每个模块以及他们之间的依赖关系，根据`entry`或分包配置生成代码块`chunk`;
 :::
-
 ### loader 和 plugin 的区别
 :::tip
 * **作用:** 
@@ -145,6 +144,12 @@ vconsole-webpack-plugin: 移动端控制台
 6. 开启eslint、fixEslint、git commitizen(git cz)
 7. 移动端配置vconsole-webpack-plugin 插件、 postcss Rem、公司内部库
 ```
+### 在webpack中如何做到长缓存优化(增量发布)？
+:::tip
+* 浏览器在用户访问页面的时候，为了加快加载速度会对用户访问的静态资源进行存储，但是每一次代码升级或更新都需要浏览器下载新的代码，最简单方便的方式就是引入新的文件名称
+* webpack中可以在output中指定chunkhash，并且分离经常更新的代码和框架代码。通过NameModulesPlugin或HashedModuleIdsPlugin使再次打包文件名不变
+
+:::
 ### webpack-merge
 ```
 用webpack-merge将配置文件拆分为3个文件，一个是webpack.common.js，即不管是生产环境还是开发环境都会用到的部分，以及webpack.prod.js和webpack.dev.js, 并且使用webpack-merge来合并对象。
@@ -261,7 +266,7 @@ const { srcPath, distPath } = require('./paths')
 module.exports = smart(webpackCommonConf, {
     mode: 'production',
     output: {
-        filename: 'bundle.[contentHash:8].js',  // 打包代码时，加上 hash 戳,内容改变hash才会变
+        filename: 'bundle.[contentHash:8].js',  // 打包代码时，加上 hash 戳,内容改变hash才会变(hash增量更新)
         path: distPath,
         // publicPath: 'http://cdn.abc.com'  // 修改所有静态文件 url 的前缀（如 cdn 域名），这里暂时用不到
     },

@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 前端面试指北
+# 组前端进阶指北
 
 ## JavaScript基础知识面试题
 
@@ -332,6 +332,18 @@ console.log('1'===1); // 输出false
 1 == {id: 1, name: 'AAA'}
         ↓
 1 == '[object Object]'
+
+var a = ''
+// let a = { // 改写 valueOf 或者 toString方法
+//   value: 1,
+//   valueOf () {
+//     return a.value++
+//   }
+// }
+
+if (a==1 && a==2 && a==3) {
+  console.log(1)
+}
 ```
 
 #### 转boolean

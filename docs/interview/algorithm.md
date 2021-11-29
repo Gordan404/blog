@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 前端面试指北
+# 组前端进阶指北
 
 ## 简单题
 ### 手写getQueryString
@@ -144,8 +144,8 @@ canOnlyFireOnce(); // nothing
 多次触发事件后，事件处理函数只执行一次，并且是在触发操作结束时执行(联想输入)。
 :::
 ```js
-function debounce(fn, delay) {
-  var timer = null;
+function debounce(fn, delay = 500) {
+  var timer;
   return function () {
     var context = this;
     if(timer) {
@@ -153,7 +153,7 @@ function debounce(fn, delay) {
     }
     timer = setTimeout(() => {
       fn.call(context, ...arguments);
-    }, delay || 500);
+    }, delay);
   }
 }
 window.onresize = debounce(function() {
@@ -166,88 +166,174 @@ window.onresize = debounce(function() {
 :::
 ```js
 function throttle(func, delay = 500) {
-  var prev = Date.now();
+  //上次执行时间 
+  let previous = 0; 
   return function() {
+      //现在的时间 
+      let now = Date.now(); 
       var context = this;
       var args = arguments;
       var now = Date.now();
-      if (now - prev >= delay) {
+      if (now - previous >= delay) { // 第一次回立马执行
           func.apply(context, args);
           prev = Date.now();
+          previous = now
       }
   }
 }
+document.body.onmousemove= throttle(function () { console.log(1) },1000) 
 ```
 ### 手写Promise
 :::tip
 **简易Promise：** 简易Promise并不完全符合Promise/A+规范，但面试时能写出简易Promise算是已经过关了。
 :::
 ```js
-// promise三个状态：pending(等待)、resolved(完成)、rejected(拒绝)
-const PENDING = 'pending';
-const RESOLVED = 'resolved';
-const REJECTED = 'rejected';
-// 简易Promise
-function MyPromise(fn) {
-  const self = this;
-  self.state = PENDING;
-  self.value = null;
-  self.resolvedCallbacks = [];
-  self.rejectedCallbacks = [];
-  // 完成方法
-  function resolve(value) {
-    if(self.state===PENDING) {
-      self.state = RESOLVED;
-      self.value = value;
-      self.resolvedCallbacks.map(cb => cb(self.value));
-    }
+// Promise简版 的实现不考虑任何异常情况
+function Promise(fn) {
+  this.cbs = [];
+  const resolve = (value) => {
+    setTimeout(() => {
+      this.data = value;
+      this.cbs.forEach((cb) => cb(value));
+    });
   }
-  // 拒绝方法
-  function reject(value) {
-    if(self.state === PENDING) {
-      self.state = REJECTED;
-      self.value = value;
-      self.rejectedCallbacks.map(cb => cb(self.value));
-    }
-  }
-  // 执行传入的方法
-  try {
-    fn(resolve, reject);
-  } catch (e) {
-    reject(e);
-  }
+  fn(resolve);
 }
-// then方法
-MyPromise.prototype.then = function(success, error) {
-  const self = this;
-  success = typeof success === 'function' ? success : v => {
-    return v;
-  };
-  error = typeof error === 'function' ? error : r => {
-    throw r;
-  };
-  if(self.state === PENDING) {
-    self.resolvedCallbacks.push(success);
-    self.rejectedCallbacks.push(error);
-  }
-  if(self.state === RESOLVED) {
-    success(self.value);
-  }
-  if(self.state === REJECTED) {
-    error(self.value)
-  }
-}
-// 执行自定义Promise
-new MyPromise((resolve, reject) => {
-  setTimeout(() => {
-    resolve(100);
-  }, 3000)
-}).then(value => {
-  console.log(value);
-}, error => {
-  console.log(error);
-})
 
+Promise.prototype.then = function (onResolved) {
+  return new Promise((resolve) => {
+    this.cbs.push(() => {
+      const res = onResolved(this.data);
+      if (res instanceof Promise) {
+        res.then(resolve);
+      } else {
+        resolve(res);
+      }
+    });
+  });
+};
+// promise三个状态：pending(等待)、resolved(完成)、rejected(拒绝)
+/** Promise A+ **/
+const PENDING = 'PENDING'
+const RESOLVE = 'RESOLVE'
+const REJECT = 'REJECT'
+const resolvePromise = (promise2, x, resolve, reject) => {
+    if (promise2 === x) {
+        return reject(new TypeError(xxx))
+    }
+    let called;
+    if ((typeof x === 'object' && typeof x !== 'null') || typeof x === 'function') {
+        try {
+            let then = x.then
+            if (typeof then === 'function') {
+                then.call(x, y => { // 根据promise的状态来决定是成功还是失败
+                    // resolve(y)
+                    if (called) return
+                    called = true
+                    resolvePromise(promise2, y, resolve, reject)
+                }, err => {
+                    if (called) return
+                    called = true
+                    reject(err)
+                })
+            } else {
+                reject(x)
+            }
+        } catch (error) {
+            if (called) return
+            called = true
+            reject(error)
+        }
+    } else {
+        resolve(x) // 普通值
+    }
+}
+class PromiseA {
+    constructor(executor) {
+        this.value = undefined
+        this.reason = undefined
+        this.onFulfilledCallbacks = []
+        this.onRjectedCallBacks = []
+        this.status = PENDING
+        let resolve = (value) => {
+            if (this.status === PENDING) {
+                this.status = RESOLVE
+                this.value = value
+                this.onFulfilledCallbacks.forEach(fn => fn())
+
+            }
+        }
+        let reject = (reason) => {
+            if (this.status === PENDING) {
+                this.status = REJECT
+                this.reason = reason
+                this.onRjectedCallBacks.forEach(fn => fn())
+            }
+        }
+        executor(resolve, reject)
+    }
+    then(onFulfilled, onRejected) {
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : v => v
+        onRejected = typeof onRejected === 'function' ? onRejected : err => { throw err }
+        let promise2 = new PromiseA((resolve, reject) => {
+            if (this.status === RESOLVE) {
+                setTimeout(() => {
+                    try {
+                        let x = onFulfilled(this.value)
+                        // resolve(x) 普通值
+                        resolvePromise(promise2, x, resolve, reject)
+                    } catch (error) {
+                        reject(error)
+                    }
+
+                })
+
+            }
+            if (this.status === REJECT) {
+                setTimeout(() => {
+                    try {
+                        let x = onRejected(this.reason)
+
+                        // resolve(x) 普通值
+                        resolvePromise(promise2, x, resolve, reject)
+                    } catch (error) {
+                        reject(error)
+                    }
+
+                })
+            }
+            if (this.status === PENDING) {
+                this.onFulfilledCallbacks.push(() => {
+                    setTimeout(() => {
+                        try {
+                            let x = onFulfilled(this.value)
+                            // resolve(x) 普通值
+                            resolvePromise(promise2, x, resolve, reject)
+                        } catch (error) {
+                            reject(error)
+                        }
+
+                    })
+                })
+                this.onRjectedCallBacks.push(() => {
+                    setTimeout(() => {
+                        try {
+                            let x = onRejected(this.reason)
+                            // resolve(x) 普通值
+                            resolvePromise(promise2, x, resolve, reject)
+                        } catch (error) {
+                            reject(error)
+                        }
+
+                    })
+                })
+            }
+        })
+        return promise2
+
+    }
+}
+module.exports = PromiseA
 ```
 ### 手动实现promise.all
 ```js
@@ -596,7 +682,48 @@ function insertSort(arr) {
   }
   findMaxLetter(arr)
 ```
-
+### 斐波那契额数列
+```js
+/** 1、1、2、3、5、8、13、21
+2 = 1*2-0
+3 = 2*2-1
+5 = 3*2-1
+8 = 5*2-2
+13= 8*2-3
+21=13*2-5
+**/
+// 递归
+var fn = function(n) {
+  if(n<=2){
+    return n;
+  }
+  return fn(n-1) + fn(n-2);
+};
+console.log(fn(3));
+// for
+function fn2(n) {
+  var a = [];
+  a[0]=0;
+  a[1]=1;
+  a[2]=1;
+  var i;
+  for(i=3;i< n;i++){
+    a[i] = 2*a[i-1]-a[i-3];/*关键句*/
+  }
+  return a[a.length - 1] // 结果
+  // return a // 每一步
+}
+// 动态规划
+var climbStairs3 = function(n){
+  let result = new Array(n+1);
+  result[1] = 1; //到第一阶有1种
+  result[2] = 2; //到第二阶有2种
+  for(let i = 3; i<n+1; i++){
+    result[i] = result[i-1] + result[i-2];
+  }
+  return result[n];
+}
+```
 ### 最长回文子串
 ```js
 /**

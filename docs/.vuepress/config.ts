@@ -34,7 +34,7 @@ export default defineUserConfig<DefaultThemeOptions>({
     editLinkPattern: ':repo/edit/master/:path',
     navbar: [
       {
-        text: '前端面试指北',
+        text: '前端进阶指北',
         children: [
           {
             text: 'JavaScript基础知识',
@@ -45,24 +45,24 @@ export default defineUserConfig<DefaultThemeOptions>({
             link: '/interview/h5.md'
           },
           {
-            text: '浏览器和网络知识点及常考',
+            text: '浏览器和网络知识',
             link: '/interview/browser.md'
           },
           {
-            text: 'Vue知识点及常考',
+            text: 'Vue知识',
             link: '/interview/vue.md'
           },
           {
-            text: '跨平台及小程序',
-            link: '/interview/native.md'
-          },
-          {
-            text: 'React知识点及常考',
+            text: 'React知识',
             link: '/interview/react.md'
           },
           {
             text: 'Webpack相关',
             link: '/interview/webpack.md'
+          },
+          {
+            text: '跨平台及小程序',
+            link: '/interview/native.md'
           },
           {
             text: '算法相关',

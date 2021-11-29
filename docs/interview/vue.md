@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 前端面试指北
+# 组前端进阶指北
 
 ## VUE相关
 
@@ -43,8 +43,11 @@ MVC 全名是 Model View Controller，是模型(model)－视图(view)－控制�
 ### Vue2.0 响应式数据的原理
 :::tip 简版
 整体思路是数据劫持+观察者模式
-* 用`observe`方法对象进行递归遍历至基本数据类型,包括子属性对象的属性，都加上 setter和getter
-这样的话,对象内部通过 `defineReactive` 方法，使用 `Object.defineProperty` 将属性进行劫持（只会劫持已经存在的属性），数组则是通过重写数组方法来实现。当页面使用对应属性时，每个属性都拥有自己的 `dep` 属性，存放他所依赖的 `watcher`（依赖收集），当属性变化后会通知自己对应的 `watcher` 去更新(派发更新)。
+* Vue的模式是m-v-vm模式，即（model-view-modelView），通过modelView作为中间层，进行双向数据的绑定与变化
+1. 通过建立虚拟dom树`document.createDocumentFragment`(),方法创建虚拟dom树
+2. 一旦被监测的数据改变，会通过`Object.defineProperty`定义的数据拦截，截取到数据的变化
+3. 截取到的数据变化，从而通过订阅——发布者模式，触发Watcher（观察者）,从而改变虚拟dom的中的具体数据
+4. 最后通过更新虚拟dom的元素值，从而改变最后渲染dom树的值，完成双向绑定
 :::
 :::tip 完整版
 vue.js 是采用数据劫持结合发布者-订阅者模式的方式，通过Object.defineProperty()来劫持各个属性的setter，getter，在数据变动时发布消息给订阅者，触发相应的监听回调。
@@ -671,7 +674,6 @@ export default {
 :::tip
 组件中的 data 写成一个函数，数据以函数返回值形式定义，这样每复用一次组件，就会返回一份新的对象的独立拷贝data，类似于给每个组件实例创建一个私有的数据空间，让各个组件实例维护各自的数据。而单纯的写成对象形式，就使得所有组件实例共用了一份 data，就会造成一个变了全都会变的结果，跟JS的引用类型相关，而非Vue.
 :::
-
 ### 组件中写name选项有什么作用
 :::tip
 1、组件keep-alive缓存用name搭配exclude过滤
