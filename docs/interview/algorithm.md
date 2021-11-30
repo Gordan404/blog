@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 组前端进阶指北
+# 前端进阶指北
 
 ## 简单题
 ### 手写getQueryString
@@ -748,6 +748,49 @@ var longestPalindrome = function(s) {
     }
     return result;
 };
+```
+### 394字符串解码
+```js
+/**
+输入：s = "3[a]2[bc]"
+输出："aaabcbc"
+**/
+var decodeString = function(s) {
+    let reg = /(\d+)\[([a-zA-Z]+)\]/g;
+    while(s.indexOf('[')>0){
+        s = s.replace(reg,(_,...[num,str])=>{
+            let result = "";
+            for(let i=0;i<num-0;i++){
+                result += str;
+            }
+            return result;
+        });
+    }
+    return s;
+};
+var decodeString2 = function(s, t) {
+    return s === (t = s.replace(/(\d+)\[(\w+)\]/g, (_, b, c) => c.repeat(b))) ? t : decodeString(t)
+};
+// 双栈
+var decodeString3 = function(s) {
+    let mulStack = [], strStack = [], num = 0, res = ''
+    for (const c of s) {   
+        if (!isNaN(c)) {  
+            num = num * 10 + (c - '0')
+        } else if (c == '[') {  
+            strStack.push(res)
+            mulStack.push(num) 
+            res = '' 
+            num = 0
+        } else if (c == ']') {  
+            res = strStack.pop() + res.repeat(mulStack.pop())
+        } else {                   
+            res += c
+        }
+    }
+    return res;
+};
+
 ```
 ### 无重复字符的最长子串
 ```js

@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 组前端进阶指北
+# 前端进阶指北
 
 ## webpack相关
 ### CommonJs、AMD、CMD、ES Module、UMD

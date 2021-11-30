@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 组前端进阶指北
+# 前端进阶指北
 ## React基础
 ### 什么是 React
 :::tip
@@ -940,3 +940,90 @@ setState修改之后会生成dirtyComponents(可能是当前组件或者子组�
 6. `Vue` 使用 `v-model` 语法糖实现双向数据绑定，而`React`则需要自己绑定`onChange` 事件
 
 :::
+
+## Hooks
+:::tip
+**历史问题：**
+* 使用函数组件(无状态组件)无法使用 `state`、生命周期 以及其他的 `React` 特性
+* 大型组件很难拆分和重构，很难测试(即class不易拆分)
+* 复用逻辑变复杂，providers，consumers，高阶组件，render props 等其他抽象层组成的组件会形成**嵌套地狱**<br/>
+**使用Hooks**
+* React 提倡函数式编程 view = fn(props),单函数组件太简单，需要增强能力 ———— `Hooks`
+:::
+### State Hook
+:::tip
+**让函数组件实现`state` 和 `setState`**
+* 默认函数组件没有`state`
+* 函数组件是个纯函数，执行完即销毁，无法`state`
+* 需要`State Hook`,即把state功能“钩”到纯函数中<br/>
+**规范:**
+ * 所有的Hooks都以use开头，如useXxx，包括自定义Hook
+:::
+```js
+import React, { useState } from 'react'
+function ClickCounter() {
+  // 数组的解构
+  const [count, setCount] = useState(0) 
+  const [name, setName] = useState('gordanlee') 
+  // 传入一个初始值, 返回数组，第一个元素是这个值，第二个是修改这个值的方法
+  // const arr = useState(0)
+  // count = arr[0]
+  // count = arr[1]
+  return <div>
+    <p>{name}点击次数{count}</p>
+    <button onClick={()=>{
+      setCount(count + 1)
+    }}>点击次数</button>
+  </div>
+}
+export default ClickCounter
+```
+### useEffect
+:::tip
+* 默认函数组件没有生命周期
+* 函数组件是一个纯函数，执行完即销毁，自己无法实生命周期
+* 使用`Effect Hook` 把生命周期“钩”到纯函数中<br/>
+**使用**
+* 模拟`componentDidMount` - useEffect 依赖[]
+* 模拟`componentDidUpdate` - useEffect 无依赖，或则依赖[a, b]
+* 模拟`componentWillUnmount` - useEffect 中返回一个函数
+:::
+```js
+import React, { useState, useEffect } from 'react'
+function Lifecycle() {
+  const [count, setCount] = useState(0)
+  const [name, setName] = useState('gordanlee')
+  // 可以模拟 class 组件的 DidMount 和 DidUpdate
+  // useEffect(()=>{
+  //   console.log('发送一个ajax请求')
+  // })
+  // 只模拟 class 组件的DidMount
+  // useEffect(()=>{
+  //   console.log('发送一个ajax请求')
+  // }, []) // 第二个参数是空数组
+  // 只模拟 class 组件的DidUpdate
+  useEffect((e)=>{
+    console.log('更新')
+  }, [count, name]) // 第二个参数是依赖的state
+  // 模拟componentWillUnmount
+  useEffect(()=>{
+    let timerId = window.setInterval(()=>{
+      console.log(Date.now())
+    }, 1000)
+    // 返回一个函数，模拟componentWillUnmount
+    return ()=> {
+      window.clearInterval(timerId)
+    }
+  })
+
+  function clickHandle() {
+    setCount(count + 1)
+    setName(name + 'Max')
+  }
+  return <div>
+    <p>{name}点击了{count}次</p>
+    <button onClick={clickHandle}>点击</button>
+  </div>
+}
+export default Lifecycle
+```

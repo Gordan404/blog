@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 组前端进阶指北
+# 前端进阶指北
 
 ## JavaScript基础知识面试题
 

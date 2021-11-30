@@ -1,7 +1,7 @@
 ---
 sidebar: auto
 ---
-# 组前端进阶指北
+# 前端进阶指北
 
 ## VUE相关
 
@@ -989,7 +989,22 @@ export function nextTick(cb) {
     timerFunc();
   }
 }
+// 回调函数被存放到了一个数组里:callbacks。
+// 如果没有传递回调函数，这个方法会返回一个Promise，然后吧reslove当成回调函数放到flushCallbacks中。所以文档解释了把本该当成回调函数的callbacks放到then里的用法。
+// 然后，有一个变量叫pending，如果不在pending中，则执行函数timerFunc。而且pending默认等于false。
+// flushCallbacks这个函数会一口气执行所有回调函数。
 ```
+:::tip
+* 其实调用`nextTick`的不仅是开发者，Vue更新Dom时，也用到了`nextTick`。
+1. 首先`timerFunc`函数负责把回调函数们都丢到事件循环的队尾
+2. `nextTick`函数负责把回调函数们都保存起来
+3. 调用`nextTick`函数时会调用`timerFunc`函数
+4. 开发者更新绑定的数据之后，Vue更新Dom也会使用`nextTick`，把更新Dom的回调函数作为微任务塞到事件循环里去,开发者调用的`nextTick的回调函数在队列末尾，就一定在更行Dom的回调函数之后执行了。
+:::
+### 浏览器的渲染机制，渲染线程是在微任务执行完成之后运行的，渲染线程没运行，怎么拿到Dom
+:::tip
+因为，渲染线程只是把Dom树渲染成UI而已，Vue更新Dom之后，在Dom树里，新的Dom节点已经存在了，js线程就已经可以拿到新的Dom了。除非开发者读取Dom的计算属性，触发了强制重流渲染线程才会打断js线程。
+:::
 ### Vue.mixin 的使用场景和原理
 :::tip
 在日常的开发中，我们经常会遇到在不同的组件中经常会需要用到一些相同或者相似的代码，这些代码的功能相对独立，可以通过 Vue 的 mixin 功能抽离公共的业务逻辑，原理类似“对象的继承”，当组件初始化时会调用 mergeOptions 方法进行合并，采用策略模式针对不同的属性进行合并。当组件和混入对象含有同名选项时，这些选项将以恰当的方式进行“合并”。
