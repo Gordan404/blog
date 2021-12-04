@@ -63,6 +63,7 @@ var obj = {
 function _get (source, path) {
   // a[3].b -> a.3.b
   const paths = path.replace(/\[(\d+)\]/g, '.$1').split('.')
+  // 匹配[],替换成.
   let res = source;
   for (const p of paths) {
     // hasOwnProperty可以区分undefiend
@@ -795,21 +796,23 @@ var decodeString3 = function(s) {
 ### 无重复字符的最长子串
 ```js
 /**
-输入: s = "abcabcbb"
+输入: s = "abcabcdb"
 输出: 3 
 解释: 因为无重复字符的最长子串是 "abc"，所以其长度为 3。
 **/
 var lengthOfLongestSubstring = function(s) {
-    let arr = [], max = 0
-    for(let i = 0; i < s.length; i++) {
-        let index = arr.indexOf(s[i])
-        if(index !== -1) {
-            arr.splice(0, index+1);
-        }
-        arr.push(s.charAt(i))
-        max = Math.max(arr.length, max) 
-    }
-    return max
+   var str=[],maxLength=0;
+   // var maxStr = []
+   for(let i =0;i<s.length;i++){
+       let index = str.indexOf(s[i]);
+       if(index>-1){
+           str.splice(0,index+1);  // 如果有重复,把首个0至缓存的第一位重复删除
+       }
+       str.push(s[i]);  // 当前不重复的字符串
+       //  maxStr = str.length > maxStr.length ? [...str] : maxStr
+       maxLength = Math.max(maxLength,str.length);
+   }
+   return maxLength;
 };
 
 var lengthOfLongestSubstring = function(s) {

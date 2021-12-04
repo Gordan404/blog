@@ -3,7 +3,7 @@ sidebar: auto
 ---
 # 前端进阶指北
 
-## JavaScript基础知识面试题
+## JavaScript基础知识
 
 ### 原始类型
 ::: tip

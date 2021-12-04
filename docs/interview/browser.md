@@ -3,7 +3,7 @@ sidebar: auto
 ---
 # 前端进阶指北
 
-## 浏览器相关基础面试题
+## 浏览器相关基础
 
 ### 事件机制
 
@@ -390,7 +390,7 @@ for(let i = 0; i < 1000; i++) { // 获取 offsetTop 会导致回流，因为需�
 5. 动画实现的速度的选择，动画速度越快，回流次数越多，也可以选择使用`requestAnimationFrame`
 6. 将频繁重绘或者回流的节点设置为图层，图层能够阻止该节点的渲染行为影响别的节点。比如对于`video`标签来说，浏览器会自动将该节点变为图层。
 7. var fragment = document.createDocumentFragment();
-## 安全防范面试题
+## 安全防范
 ### XSS跨域脚本攻击
 ::: tip
 XSS攻击简单来说就是攻击者想尽一切办法把可执行的代码嵌入到页面中，可以窃取 Cookie 信息、监听用户行为（键盘事件输入密码）、修改DOM模拟登入框、插入悬浮广告，以达到非法窃取某些数据或者破坏的目的。
@@ -398,7 +398,7 @@ XSS攻击简单来说就是攻击者想尽一切办法把可执行的代码嵌�
 网络劫持在页面传输过程中修改 HTML 页面的内容，这种劫持类型很多，有通过 WiFi 路由器劫持,运营商劫持
 
 **依据情景的不同，XSS攻击可分为两种类型**
-#### 反射性XSS
+### 反射型的XSS
 用户将一段含有恶意代码的请求提交给 Web 服务器，Web 服务器接收到请求时，又将恶意代码反射给了浏览器端(不存储)，一个反射性XSS可能如下所示
 ```js
 // 搜索地址栏取参数
@@ -411,13 +411,25 @@ router.get('/', function(req, res, next) {
   <%- xss %>
 </div>
 ```
-
-#### 存储型XSS
+#### 跳转漏洞
+:::tip
+这个会跳转到浏览器端的javascript协议而执行js，成了一个反射的xss，而且浏览器端的xssfilter对它无效
+:::
+```js
+window.location.href="javascript:alert(document.cookie)"
+// 给变量前加"/"或者只有"/"开头的才跳转
+// 替换变量中的":"
+// 替换"http://"
+// 匹配域名白名单
+// #!javascript
+// location.href = "//diaoyuwangzhan.com"
+```
+### 存储型XSS
 用户将一段含有恶意代码的请求提交给 Web 服务器，Web 服务器接收到请求时，又将恶意代码反射给了浏览器端(不存储
 
 ![储存性XSS攻击](../assets/images/interview/12.png)
 
-#### XSS防御
+### XSS防御
 ::: tip
 1. 将由用户输入的内容，进行必要的标签转义，包括`<`、`>`、`/`等,`React.dangerouslySetInnerHTML`
 2. 再服务端设置`cookie`属性`httpOnly`防止客户端通过`document.cookie`读取
@@ -661,7 +673,7 @@ const url = `https://www.gordanlee.com/image/log.png?x-oss-process=image/format,
  1. npm i react-window // 使用react-window去做长列表渲染
  2. content-visibility: auto; // content-visibility可以实现可见网页只加载可见区域内容，使网页的渲染性能得到数倍(四倍)的提升。
 ```
-## HTTP相关面试题
+## HTTP相关
 ### 七层网络模型
 应用层、表示层、会话层、传输层、网络层、数据链路层、物理层
 ### TCP和UDP
