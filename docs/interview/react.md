@@ -983,10 +983,18 @@ export default ClickCounter
 * 默认函数组件没有生命周期
 * 函数组件是一个纯函数，执行完即销毁，自己无法实生命周期
 * 使用`Effect Hook` 把生命周期“钩”到纯函数中<br/>
+**副作用**
+* `useEffect`让纯函数有了副作用，默认情况下，执行纯函数，输入参数，返回结果，无副作用
+* 所谓副作用，就是对函数之外造成影响，如果设置全局定时任务,数据获取,数据订阅，以及手动更改 React 组件中的 DOM 都属于副作用,因为我们渲染出的页面都是静态的，任何在其之后的操作都会对他产生影响，所以称之为副作用.
+* 副作用又分为两种：（1）无需清除的副作用(送网络请求、手动变更 DOM、记录日志) （2）需要清除的副作用（添加DOM事件、定时器）
+* 而组件需要副作用，需要`useEffect` "钩" 到函数中<br/>
 **使用**
 * 模拟`componentDidMount` - useEffect 依赖[]
 * 模拟`componentDidUpdate` - useEffect 无依赖，或则依赖[a, b]
-* 模拟`componentWillUnmount` - useEffect 中返回一个函数
+* 模拟`componentWillUnmount` - useEffect 中返回一个函数<br/>
+**注意**
+* `useEffect`的第二个参数为一个空数组，初始化调用一次之后不再执行，相当于`componentDidMount`
+* `useEffect` 第二个参数时或者依赖[a, b],组件的初始化和更新都会执行返回FN,所以不完全等价class中 `componentWillUnmount`
 :::
 ```js
 import React, { useState, useEffect } from 'react'
@@ -1026,4 +1034,164 @@ function Lifecycle() {
   </div>
 }
 export default Lifecycle
+```
+### useEffect 中返回的函数FN
+:::tip
+* `useEffect` 的第二个参数一个空数组, 组件销毁是执行fn,fn等于`componentWillUnmount`
+* `useEffect` 第二个参数时或者依赖[a, b],组件的初始化和更新都会执行返回FN
+* 即，下一次执行`useEffect`之前，就会执行fn,无论更新或卸载,所以不完全等价class中 `componentWillUnmount`
+:::
+```js
+import React, {useState, useEffect} from 'react'
+function FriendStatus({friendId}) {
+  const [status, setStatus] = useState(false)
+  // DidMount 和 DidUpdate
+  useEffect(()=>{
+    console.log(`开始监听 ${friendId}在线状态`)
+    // 【特别注意】
+    // 此处并不完全等同于 WillUnMount
+    // props 发生变化，即更新，也会先执行结束监听
+    // 准确的说: 返回的函数，会在下一次`effect`执行之前被执行
+    return ()=>{
+      console.log(`结束监听 ${friendId}在线状态`)
+    }
+  })
+  return <div>
+    好友 {friendId} 在线状态： {status.toString()}
+  </div>
+}
+export default FriendStatus
+```
+### useMemo 
+:::tip
+* 父组件改变，`React`默认会更新所有子组件
+* `class`组件使用`SCU` 和 `PureComponent` 做优化
+* `Hooks` 中使用useMemo,但优化的原理是相同的
+:::
+```js
+import React, { useState, memo, useMemo } from 'react'
+// 子组件
+// function Child({ userInfo}) {
+//   console.log('Child render...', userInfo)
+//   return <div>
+//       <p>这是子组件{userInfo.name} {userInfo.age}</p>
+//     </div>
+// }
+// 类似 class PireeComponent, 对props进行浅层比较
+const Child = memo(({ userInfo}) => {
+  console.log('Child render...', userInfo)
+  return <div>
+      <p>这是子组件{userInfo.name} {userInfo.age}</p>
+    </div>
+})
+// 父组件
+function App() {
+  console.log('Parent render...')
+  const [count, setCount] = useState(0)
+  const [name, setName] = useState('goradanlee')
+  // const userInfo = { name, age: 20 }
+  // userInfo传静态值，子组件只依赖name、age，按理父组件改变后子组件不会受到影响，但是也被更新了
+  /******/
+  // 用 useMemo 缓存数据,有依赖
+  const userInfo =  useMemo(()=>{
+    return { name, age: 21}
+  }, [name])
+
+  return <div>
+    <p>
+       count is {count}
+       <button onClick={()=>{
+         setCount(count + 1)
+       }}>增加</button>
+    </p>
+    <Child userInfo={userInfo} />
+  </div>
+}
+export default App
+```
+### useCallback
+:::tip
+* `useMemo`缓存数据
+* `useCallback`缓存函数
+* 两者都是 `React Hooks` 的常见缓存策略
+:::
+```js
+import React, { useState, memo, useMemo, useCallback } from 'react'
+// 子组件
+// 类似 class PireeComponent, 对props进行浅层比较
+const Child = memo(({ userInfo, onChange}) => {
+  console.log('Child render...', userInfo)
+  return <div>
+      <p>这是子组件{userInfo.name} {userInfo.age}</p>
+      <input onChange={onChange}></input>
+    </div>
+})
+// 父组件
+function App() {
+  console.log('Parent render...')
+  const [count, setCount] = useState(0)
+  const [name, setName] = useState('goradanlee')
+  // 用 useMemo 缓存数据,有依赖
+  const userInfo =  useMemo(()=>{
+    return { name, age: 21}
+  }, [name])
+  // function onChange(e) {
+  //   console.log(e.target.value)
+  // }
+  // 用 useCallback 缓存数据(如果不用会导致useMemo失效)
+  const onChange = useCallback((e)=>{
+    console.log(e.target.value)
+  }, [])
+  return <div>
+    <p>
+       count is {count}
+       <button onClick={()=>{
+         setCount(count + 1)
+       }}>增加</button>
+    </p>
+    <Child userInfo={userInfo} onChange={onChange} />
+  </div>
+}
+export default App
+```
+### useRef
+:::tip
+* DOM元素的获取
+:::
+```js
+import React, { useRef, useEffect } from 'react'
+function App() {
+  const btnRef = useRef(null) // 初始值
+  useEffect(()=>{
+    console.log(btnRef.current) // DOM节点
+  }, [])
+  return <button ref={btnRef}>按钮</button>
+}
+export default App
+```
+### useContext
+:::tip
+* useContext可以帮助我们跨越组件层级直接传递变量，实现共享。
+:::
+```js
+// 父
+import React, { useState , createContext } from 'react';
+const CountContext = createContext()
+function Example(){
+    const [ count , setCount ] = useState(0);
+    return (
+      <div>
+          <p>You clicked {count} times</p>
+          <button onClick={()=>{setCount(count+1)}}>click me</button>
+          <CountContext.Provider value={count}></CountContext.Provider>
+      </div>
+    )
+}
+export default Example;
+// 子
+import React, { useState , createContext , useContext } from 'react';  
+function Counter(){
+    const count = useContext(CountContext)    //一句话就可以得到count
+    return (<h2>{count}</h2>)
+}
 ```

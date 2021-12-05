@@ -999,6 +999,67 @@ var reverseList = function(head) {
     return p2;
 }
 ```
+### 剑指 Offer 09. 用两个栈实现队列
+```js
+/**
+输入：
+["CQueue","appendTail","deleteHead","deleteHead"]
+[[],[3],[],[]]
+输出：[null,null,3,-1]
+简单明了，带你直接看懂题目和例子。 输入： ["CQueue","appendTail","deleteHead","deleteHead"] 这里是要执行的方法，从左到右执行
+[[],[3],[],[]]对应上面的方法，是上面方法的参数。CQueue和deleteHead方法不需要指定数字，只有添加才需要指定数字
+1.创建队列，返回值为null
+2.将3压入栈，返回值为null
+3.将栈底的元素删除，也就是消息队列中先进来的元素，所以是deleteHead，返回该元素的数值，所以为3
+4.继续删除栈底的元素，但是没有元素了，所以返回-1
+所以就有了下面的输出 输出：[null,null,3,-1]
+示例 2： 输入： ["CQueue","deleteHead","appendTail","appendTail","deleteHead","deleteHead"]
+[[],[],[5],[2],[],[]]
+1.创建队列，返回值为null
+2.删除栈底的元素，但是没有元素，所以返回-1
+3.把5压入栈，返回null
+4.把2压入栈，返回null
+5.删除栈底的一个元素，也就是消息队列中先进来的元素，所以是deleteHead，就是最先进来的5，返回值为5，
+6.删除栈底的一个元素，就是后进来的2，返回值为2，
+所以就有了下面的输出
+输出：[null,-1,null,null,5,2]
+有没有发现先进来的数字，首先显示出来了，但是题目中说要使用栈，栈是先进后出的，使用栈来实现先进先出，在这里使用两个栈就好了，从一个进来再到另一个栈，这样顺序就是先进先出了。题目的主旨写在第一句，就是，使用两个栈实现一个队列。
+**/
+var CQueue = function () {
+  this.stackA = [];
+  this.stackB = [];
+};
+/**
+ * @param {number} value
+ * @return {void}
+ */
+CQueue.prototype.appendTail = function (value) {
+  this.stackA.push(value);
+};
+// 思路是进队列永远从a栈进入
+// 出队列永远从b栈出，只有b栈没有了就从a栈中轮流倒腾到b
+// 总之出队列一定是从b栈出
+/**
+ * @return {number}
+ */
+CQueue.prototype.deleteHead = function () {
+  // 两个栈都没有元素
+  if (!this.stackA.length && !this.stackB.length) return -1;
+  // 只有每次 (出栈)stack2 空了，才将 (入栈)stack1 中的元素加入到 stack2
+  // 这样才可以保证 队列的 特性: 先进先出
+  // 删除栈没元素，从插入栈拿
+  if (!this.stackB.length) {
+    while (this.stackA.length) {
+      this.stackB.push(this.stackA.pop());
+    }
+  }
+  // 删除栈有元素，直接删
+  return this.stackB.pop();
+};
+//  var obj = new CQueue()
+//  obj.appendTail(value)
+//  var param_2 = obj.deleteHead()
+```
 ## 二叉树
 
 ### 翻转一棵二叉树
