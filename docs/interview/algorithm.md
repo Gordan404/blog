@@ -580,6 +580,92 @@ xhr.onreadystatechange = function() {
   }
 }
 ```
+### sleep 队列
+```js
+class Zeus{
+  constructor(name){
+    this.name = name
+    this.queue = [start];
+    function start(resolve) {
+      console.log(`Hi! This is ${name}`);
+      resolve();
+    }
+    setTimeout(() => {
+      let start = Promise.resolve();
+      for (let i = 0; i < this.queue.length; i++) {
+        start = start.then(() => new Promise(this.queue[i]));
+      }
+    })
+  }
+  eat(food) {
+    function eatFood(resolve) {
+      console.log(`Eat ${food}~`);
+      resolve();
+    }
+    this.queue.push(eatFood);
+    return this;
+  }
+  sleepFn(time){
+    return function fn(resolve){
+      console.log(`等待${time}秒...`);
+      setTimeout(()=>{
+        console.log(`Wake up after ${time}`)
+        return resolve();
+      }, time * 1000);
+    }
+  }
+  sleep(time) {
+    this.queue.push(this.sleepFn(time));
+    return this;
+  }
+  sleepFirst(time) {
+    this.queue.splice(0, 0, this.sleepFn(time));
+    return this;
+  };
+}
+function Person(){
+  return new Zeus(...arguments);
+}
+```
+### 最大并发控制
+```js
+class TaskQueue {
+  constructor(max = 2) {
+    this.taskList = []
+    this.max = max
+  }
+  add(task) {
+    this.taskList.push(task)
+  }
+  run() {
+    if(!this.taskList.length) {return
+    }
+    const min = Math.min(this.taskList.length, this.max)
+    for (let index = 0; index < min; index++) {
+      this.max--; // 执行最大并发递减
+      const task = this.taskList.shift();
+      task().finally(()=>{ // 重：当所有请求完成并返回结果后，执行finally回调，此回调将按照for循环依次执行，此时max为0.
+        this.max++;  // 超过最大并发10以后的任务将按照任务顺序依次执行。此处可理解为递归操作。
+        this.run()
+      })
+    }
+  }
+}
+const T1 = new TaskQueue(2);
+const task = () => {
+  return new Promise((resolve)=>{
+    setTimeout(() => {
+      console.log('xxxx___11')
+      resolve()
+    }, 1000);
+  })
+}
+T1.add(task)
+T1.add(task)
+T1.add(task)
+T1.add(task)
+T1.run();
+```
 ## LeeCode
 ### JS中sort函数的底层实现机制？
 :::tip
@@ -715,14 +801,15 @@ function fn2(n) {
   // return a // 每一步
 }
 // 动态规划
+
 var climbStairs3 = function(n){
-  let result = new Array(n+1);
-  result[1] = 1; //到第一阶有1种
-  result[2] = 2; //到第二阶有2种
-  for(let i = 3; i<n+1; i++){
-    result[i] = result[i-1] + result[i-2];
+  let arr = [];
+  arr[0] = 0;
+  arr[1] = 1;
+  for (let index = 2; index <= n; index++) {
+   arr[index] = arr[index-1] + arr[index-2]
   }
-  return result[n];
+  return arr[n];
 }
 ```
 ### 最长回文子串
@@ -845,6 +932,22 @@ var twoSum = function(nums, target) {
     }
     return [];
 };
+```
+### 洗牌算法，随机排序
+```js
+function randomsort2 (arr) {
+  const newarr = []
+  while (arr.length) {
+    // parseInt取整数位
+    const ran = parseInt(Math.random() * arr.length)
+    newarr.push(arr[ran])
+    arr.splice(ran, 1)
+  }
+  return newarr    
+}   
+function randomsort3 (arr) { 
+  return arr.sort(() => Math.random() - 0.5)   
+}
 ```
 ### 给定一个整数数组，判断是否存在重复元素
 ```js
