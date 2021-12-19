@@ -137,7 +137,7 @@ var obj = {name: "狗子", age: 24};
 var canOnlyFireOnce = runOnce(function () {
   console.log("你好" + this.name);
 }, obj);
-canOnlyFireOnce(); //你好天涯孤雁
+canOnlyFireOnce(); //你好
 canOnlyFireOnce(); // nothing
 ```
 ### 手写函数防抖
@@ -384,7 +384,7 @@ function deepClone(obj) {
   let newObj = isArray ? [...obj] : { ...obj }
   // Object.keys()返回属性key，但不包括不可枚举的属性
   // Reflect.ownKeys()返回所有属性key
-  // ownKeys 目标对象自身的属性键组成的数组
+  // ownKeys 返回所有自有属性key，不管是否可枚举，但不包括继承自原型的属性
   Reflect.ownKeys(newObj).forEach(key => {
     newObj[key] = isObject(obj[key]) ? deepClone(obj[key]) : obj[key]
   })
@@ -464,6 +464,7 @@ function flat(arr){
 ary = str.replace(/(\[|\])/g, '').split(',')
 // 四、toString
 function flatten(arr) {
+    // toString '1,2,3,4,5,6'
    return arr.toString().split(',').map(function(item){
     return +item
   })
@@ -532,6 +533,7 @@ _eventBus.emit('say', { name: 'gordanle'} )
 ```
 ### 手写rem布局原理
 ```js
+ <meta name="viewport" content="width=device-width,initial-scale=1,minimun-scale=1,maximum-scale=1,user-scalable=no">
 (function(){
     var html = document.querySelector('html');
     changeRem();
@@ -997,109 +999,109 @@ function isRepeat(array) {
   return false
 }
 ```
-## 链表
-:::tip
-1、链表是链式存储结构，数组是顺序存储结构
-2、链表通过指针连接元素与元素，而数组则是把所有元素按顺序进行存储
-3、链表的插入和删除元素比较简单，不需要移动元素，且较为容易实现长度的扩充，但是查询元素比较困难，数组是查询比较快，但是删除和增加会比较麻烦。
-:::
-### 链表和数组区别
-:::tip
-链表是链式存储结构，数组是顺序存储结构；链表通过指针连接元素，而数组则是把所有元素按顺序进行存储；链表插入和删除元素不需要移动元素，数组删除和增加元素需要移动元素。
-:::
-### 单向链表
-:::tip
-* 每个链表都有一个头指针，指向第一个节点，没节点则指向NULL,最后一个节点的指针指向空（NULL）
-* 每个节点(node)都由数据本身和一个指向后续节点的指针组成
-* 整个链表的存取必须从头指针开始，头指针指向第一个节点
-:::
-```js
-  /**声明一个链表节点**/
-  class Node {
-    constructor(value) {
-      this.value = value
-      this.next = null // 默认null
-    }
-  }
-  class NodeList {
-    constructor(arr) {
-      // 声明头部节点
-      let head = new Node(arr.shift())
-      let next = head
-      arr.forEach(item=>{
-        next.next = new Node(item)
-        next = next.next
-      })
-       // 链表只暴露一个head
-      return head
-    }
-  }
-```
-### 给定一个排序链表，删除所有重复的元素，使得每个元素只出现一次
+### 剑指 Offer II 099. 最小路径之和
 ```js
 /**
-示例 1:
-输入: 1->1->2
-输出: 1->2
-示例 2:
-输入: 1->1->2->3->3
-输出: 1->2->3
+输入：grid = [[1,3,1],[1,5,1],[4,2,1]]
+输出：7
+解释：因为路径 1→3→1→1→1 的总和最小。
+
+输入：grid = [[1,2,3],[4,5,6]]
+输出：12
+https://leetcode-cn.com/problems/0i0mDW/
 **/
-  const list = new NodeList([1, 2, 3, 3,4,4])
-  function deleteDuplicates(head) {
-    var cur = head
-    while (cur && cur.next !== null) {
-      if(cur.value === cur.next.value) {
-        cur.next = cur.next.next
-      }
-      cur = cur.next
-    }
-    return head
-  }
-```
-### 分割链表 
-```js
-/**
-给你一个链表的头节点 head 和一个特定值 x ，请你对链表进行分隔，使得所有 小于或等于 x 的节点都出现在 x 的节点之前,大于位置不变。
-输入：head = [1,4,3,2,5,2], x = 3
-输出：[1,2,2,4,3,5]
-输入：head = [2,1], x = 2
-输出：[1,2]
-**/
-var partition = function(head, x) {
-    let left = new Node(0); // 初始化一个空节点，初始赋值为0，指针指向为list
-    const leftHead = left;
-    let right = new Node(0);
-    const rightHead = right;
-    while (head !== null) {
-        if (head.value < x) {
-            left.next = head;
-            left = left.next;
-        } else {
-            right.next = head;
-            right = right.next;
+// 5. 动态规划：从起始点到终点
+var minPathSum3 = function(grid) {
+    const m = grid.length, n = grid[0].length
+
+    // 状态定义：dp[i][j] 表示从 [0,0] 到 [i,j] 的最小路径和
+    const dp = new Array(m).fill(0).map(() => new Array(n).fill(0))
+
+    // 状态初始化
+    dp[0][0] = grid[0][0]
+
+    // 状态转移
+    for (let i = 0; i < m ; i++) {
+        for (let j = 0; j < n ; j++) {
+            if (i == 0 && j != 0) {
+                dp[i][j] = grid[i][j] + dp[i][j - 1]
+            } else if (i != 0 && j == 0) {
+                dp[i][j] = grid[i][j] + dp[i - 1][j]
+            } else if (i != 0 && j != 0) {
+                dp[i][j] = grid[i][j] + Math.min(dp[i - 1][j], dp[i][j - 1])
+            }
         }
-        head = head.next;
     }
-    right.next = null;
-    left.next = rightHead.next;
-    return leftHead.next;
-};
-const list = new NodeList([1, 4, 3, 2, 5, 2])
-console.log(partition(list, 3))
+
+    // 返回结果
+    return dp[m - 1][n - 1]
+}
 ```
-### 单链表的反转
+### 快乐数
 ```js
-var reverseList = function(head) {    
-    let p1 = head;
-    let p2 = null;
-    while(p1){
-        const temp = p1.next;
-        p1.next = p2;
-        p2 = p1;
-        p1 = temp;  
+/**
+对于一个正整数，每一次将该数替换为它每个位置上的数字的平方和。
+然后重复这个过程直到这个数变为 1，也可能是 无限循环 但始终变不到 1。
+如果 可以变为  1，那么这个数就是快乐数。
+输入：n = 19  
+输出：true
+解释：
+19 分为 1 和 9
+1² + 9² = 82
+8²+ 2²= 68
+6²+ 8²= 100
+1²+ 0²+ 0²= 1
+**/
+
+// 笨比解法, 大致思路就是, 一个数的每一位的最大平方和, 也就是每一位都等于9的时候, 那么你会发现这个数其实是越来越小越来越小, 从中找到规律发现最终都会变为个位, 所有数几乎都是, 而个位数里为快乐数的只有1和7。
+
+// 递归对字符串进行处理，base case判断n<10的情况
+var isHappy = function(n) {
+    if(n<10){
+        console.log(n)
+        return (n==1||n==7)?true:false
     }
-    return p2;
+    let temp=n.toString()
+    n=0
+    for(let i=0;i<temp.length;i++){
+        n+=temp[i]**2   
+    }
+    return isHappy(n)
+};
+
+// 成功的例子(19)
+
+// 19 => 1 + 81
+// 82 => 64 + 4
+// 68 => 36 + 64
+// 100 => 1 + 0 + 0
+// 失败的例子(20)
+
+// 20 => 4 + 0
+// 4 => 16
+// 16 => 1 + 36
+// 37 => 9 + 49
+// 58 => 25 + 64
+// 89 => 64 + 81
+// 145 => 1 + 16 + 25
+// 42 => 16 + 4
+// 20 可以看到, 20再次重复出现了, 所以永远不可能等于1
+// 那思路就是利用set.has()判断重复, 就return false
+
+const isHappy = n => {
+  let set = new Set(), sum;
+  n = n.toString()
+  while (sum !== 1) {
+    sum = 0
+    for (let i = 0; i < n.length; i++) {
+      sum += Math.pow(n[i], 2)
+      // sum += n[i]*n[i]
+    }
+    n = sum + ''
+    if (set.has(sum)) return false
+    set.add(sum)
+  }
+  return true
 }
 ```
 ### 剑指 Offer 09. 用两个栈实现队列
@@ -1163,8 +1165,187 @@ CQueue.prototype.deleteHead = function () {
 //  obj.appendTail(value)
 //  var param_2 = obj.deleteHead()
 ```
+## 链表
+:::tip
+1、链表是链式存储结构，数组是顺序存储结构
+2、链表通过指针连接元素与元素，而数组则是把所有元素按顺序进行存储
+3、链表的插入和删除元素比较简单，不需要移动元素，且较为容易实现长度的扩充，但是查询元素比较困难，数组是查询比较快，但是删除和增加会比较麻烦。
+:::
+### 链表和数组区别
+:::tip
+链表是链式存储结构，数组是顺序存储结构；链表通过指针连接元素，而数组则是把所有元素按顺序进行存储；链表插入和删除元素不需要移动元素，数组删除和增加元素需要移动元素。
+:::
+### 单向链表
+:::tip
+* 每个链表都有一个头指针，指向第一个节点，没节点则指向NULL,最后一个节点的指针指向空（NULL）
+* 每个节点(node)都由数据本身和一个指向后续节点的指针组成
+* 整个链表的存取必须从头指针开始，头指针指向第一个节点
+:::
+```js
+  /**声明一个链表节点**/
+  class Node {
+    constructor(value) {
+      this.value = value
+      this.next = null // 默认null
+    }
+  }
+  class NodeList {
+    constructor(arr) {
+      // 声明头部节点
+      let head = new Node(arr.shift())
+      let next = head
+      arr.forEach(item=>{
+        next.next = new Node(item)
+        next = next.next
+      })
+       // 链表只暴露一个head
+      return head
+    }
+  }
+```
+### 剑指 Offer 22. 链表中倒数第k个节点
+```js
+/**
+ 给定一个链表: 1->2->3->4->5, 和 k = 2.
+ 返回链表 4->5.
+**/
+var getKthFromEnd = function(head, k) {
+    let node = head, n = 0;
+    while (node) {
+        node = node.next;
+        n++;
+    }
+    node = head;
+    for (let i = 0; i < n - k; i++) {
+        node = node.next;
+    }
+    return node; 
+};
+var getKthFromEnd = function(head, k) {
+  let next = head;
+  let count = 0;
+  const arr = []
+  while (next !== null) {
+    count++
+    arr.push(next)
+    next = next.next
+  }
+  return arr[arr.length - k]
+}
+```
+### 给定一个排序链表，删除所有重复的元素，使得每个元素只出现一次
+```js
+/**
+示例 1:
+输入: 1->1->2
+输出: 1->2
+示例 2:
+输入: 1->1->2->3->3
+输出: 1->2->3
+**/
+  const list = new NodeList([1, 2, 3, 3,4,4])
+  function deleteDuplicates(head) {
+    var cur = head
+    while (cur && cur.next !== null) {
+      if(cur.value === cur.next.value) {
+        cur.next = cur.next.next
+      }
+      cur = cur.next
+    }
+    return head
+  }
+```
+### 分割链表 
+```js
+/**
+给你一个链表的头节点 head 和一个特定值 x ，请你对链表进行分隔，使得所有 小于或等于 x 的节点都出现在 x 的节点之前,大于位置不变。
+输入：head = [1,4,3,2,5,2], x = 3
+输出：[1,2,2,4,3,5]
+输入：head = [2,1], x = 2
+输出：[1,2]
+**/
+var partition = function(head, x) {
+    let left = new Node(0); // 初始化一个空节点，初始赋值为0，指针指向为list
+    const leftHead = left;
+    let right = new Node(0);
+    const rightHead = right;
+    while (head !== null) {
+        if (head.value < x) {
+            left.next = head;
+            left = left.next;
+        } else {
+            right.next = head;
+            right = right.next;
+        }
+        head = head.next;
+    }
+    right.next = null;
+    left.next = rightHead.next;
+    return leftHead.next;
+};
+const list = new NodeList([1, 4, 3, 2, 5, 2])
+console.log(partition(list, 3))
+```
+### 单链表的反转
+```js
+var reverseList = function(head) {    
+  var pre = null
+  var current = head
+  while (current !== null) {
+    var next = current.next
+    current.next = pre
+    pre = current
+    current = next
+  }
+  return pre
+}
+```
+###  K 个一组翻转链表
+```js
+/**
+输入：head = [1,2,3,4,5], k = 3
+输出：[3,2,1,4,5]
+输入：head = [1,2,3,4,5], k = 1
+输出：[1,2,3,4,5]
+**/
+var reverseKGroup = function(head, k) {
+    if(k === 1) return head
+    let dummy = new ListNode(-1), pre = dummy
+    let cur = head
+    // 反转 [first -> last) 之间的结点
+    const reverseNode = (first, last) => {
+        let m = k
+        while(m--){
+            let next = first.next
+            first.next = pre.next
+            pre.next = first
+            first = next
+        }
+    }
+    while(cur){
+        let cnt = 0, last = cur, before
+        while(last && cnt < k){
+            before = last
+            last = last.next
+            cnt++
+        }
+        // 足够k个,可以反转
+        if(cnt === k){
+            reverseNode(cur, last)
+            // 将反转后的链表结点与后续结点续上
+            cur.next = last
+        }else{
+            // 不足k个,此时last必然是null
+            // 将cur直接指向last的前一个
+            cur = before
+        }
+        pre = cur
+        cur = cur.next
+    }
+    return dummy.next
+};
+```
 ## 二叉树
-
 ### 翻转一棵二叉树
 ```js
 /**
