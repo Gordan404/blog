@@ -142,7 +142,7 @@ canOnlyFireOnce(); // nothing
 ```
 ### 手写函数防抖
 :::tip
-多次触发事件后，事件处理函数只执行一次，并且是在触发操作结束时执行(联想输入)。
+函数防抖：函数防抖的核心思路是利用setTimeout延迟执行某个方法，只有在指定的事件后才执行，中间触发的事件不执行。最常见的函数防抖就是，搜索框只有用户在输入完毕后才去服务器执行查询。
 :::
 ```js
 function debounce(fn, delay = 500) {
@@ -163,7 +163,7 @@ window.onresize = debounce(function() {
 ```
 ### 手写函数节流
 :::tip
-节流: 触发函数事件后，短时间间隔内无法连续调用，只有上一次函数执行后，过了规定的时间间隔，才能进行下一次的函数调用(window.onresize事件、mouseover事件、scroll事件、其他事件，避免频繁回流)
+函数节流：将原本1秒可能执行10次的函数，节流成1秒只执行2次-3次，有许多函数需要节流，例如：(window.onresize事件、mouseover事件、scroll事件、其他事件，避免频繁回流)
 :::
 ```js
 function throttle(func, delay = 500) {

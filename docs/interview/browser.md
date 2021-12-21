@@ -780,6 +780,23 @@ HTTPS 在内容传输的加密上使用的是对称加密，非对称加密只�
 
   503 请求未完成，服务器临时过载或宕机
 :::
+### 简单请求与复杂请求
+:::tip
+浏览器将CORS请求分成两类：简单请求（simple request）和非简单请求（not-so-simple request）<br/>
+**简单请求**
+1. 请求方法：GET、POST、HEAD
+2. 除了以下的请求头字段之外，没有自定义的请求头
+* Accept
+* Accept-Language
+* Content-Language
+* Content-Type ：只限于三个值application/x-www-form-urlencoded、multipart/form-data、text/plain
+
+**复杂请求**
+* 非简单请求即为复杂请求。复杂请求我们也可以称之为在实际进行请求之前，需要发起预检请求的请求。
+* 跨域资源共享标准新增了一组 HTTP 首部字段，允许服务器声明哪些源站通过浏览器有权限访问哪些资源。另外，规范要求，对那些可能对服务器数据产生副作用的 HTTP 请求方法（特别是 GET 以外的 HTTP 请求，或者搭配某些 MIME 类型的 POST 请求），**浏览器必须首先使用 OPTIONS 方法发起一个预检请求（浏览器代发的）**（preflight request），从而获知服务端是否允许该跨域请求。服务器确认允许之后，才发起实际的 HTTP 请求。在预检请求的返回中，服务器端也可以通知客户端，是否需要携带身份凭证（包括 Cookies 和 HTTP 认证相关数据）
+:::
+
+
 ## 浏览器进程
 ### 单进程浏览器
 :::tip

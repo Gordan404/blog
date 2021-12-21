@@ -783,13 +783,18 @@ console.log(newObj.job.money);// 输出12，不受影响
 本章节只介绍ES6常考知识点，更多基础知识请直接跳转至[你不知道的JavaScript(中)](/books/javascript/know-down.md)
 ### var、let和const的区别
 ::: tip
-1. `var`声明的变量会提升到作用域的顶部，而`let`和`const`不会进行提升
+1. `var`声明的变量会提升到作用域的顶部，而`let`和`const`不会进行提升(声明前访问出现暂时性死区)
 2. `var`声明的全局变量会被挂载到全局`window`对象上，而`let`和`const`不会
 3. `var`可以重复声明同一个变量，而`let`和`const`不会
 4. `var`声明的变量作用域范围是函数作用域，而`let`和`const`声明的变量作用域范围是块级作用域。
 5. `const`声明的常量，一旦声明则不能再次赋值，再次赋值会报错(更改对象属性不会，因为对象地址没有变,但是chrome92`const`可以重复声明)
 :::
 ```js
+// let/const的暂时性死区
+console.log(a) // ReferenceError: a is not defined 
+let a
+
+
 // ES5实现const
 // 由于ES5环境没有block的概念，所以是无法百分百实现const，只能是挂载到某个对象下，要么是全局的window，要么就是自定义一个object来当容器
   var __const = function __const (data, value) {
@@ -960,7 +965,74 @@ var newStr = `我叫：${name},我的年龄是：${age},我的地址是：${addr
 console.log(str);     // 输出:我叫：why,我的年龄是：23，我的地址是：广州
 console.log(newStr);  // 输出:我叫：why,我的年龄是：23，我的地址是：广州
 ```
+### 箭头函数与普通函数的区别
+:::tip
+1. 箭头函数没有 prototype (原型)，所以箭头函数本身没有this
+2. 箭头函数不会创建自己的this，所以需要通过查找作用域链来确定 this 的值
+3. call | apply | bind 无法改变箭头函数中this的指向
+4. 箭头函数不能作为构造函数使用(不能通过 new 关键字调用)
+5. 箭头函数没有arguments，取而代之用rest参数...代替arguments对象，来访问箭头函数的参数列表,箭头函数可以访问外围函数的 arguments 对象
+6. 不能自执行函数
+:::
+```js
+/** 1. 箭头函数没有 prototype (原型)，所以箭头函数本身没有this **/
+// 箭头函数
+let a = () => {};
+console.log(a.prototype); // undefined
+// 普通函数
+function a() {};
+console.log(a.prototype); // {constructor:f}
+// 2. 箭头函数不会创建自己的this，所以需要通过查找作用域链来确定 this 的值
+let obj = {
+  a: 10,
+  b: () => {
+    console.log(this.a); // undefined
+    console.log(this); // Window {postMessage: ƒ, blur: ƒ, focus: ƒ, close: ƒ, frames: Window, …}
+  },
+  c: function() {
+    console.log(this.a); // 10
+    console.log(this); // {a: 10, b: ƒ, c: ƒ}
+  }
+}
+obj.b(); 
+obj.c();
 
+/** 3. call | apply | bind 无法改变箭头函数中this的指向 **/
+
+var id = 10;
+let fun = () => {
+    console.log(this.id)
+};
+fun();     // 10
+fun.call({ id: 20 });     // 10
+
+/** 5.箭头函数不绑定arguments，取而代之用rest参数...代替arguments对象，来访问箭头函数的参数列表 **/
+// 普通函数
+function A(a){
+  console.log(arguments);
+}
+A(1,2,3,4,5,8);  //  [1, 2, 3, 4, 5, 8, callee: ƒ, Symbol(Symbol.iterator): ƒ]
+// 箭头函数
+let B = (b)=>{
+  console.log(arguments);
+}
+B(2,92,32,32);   // Uncaught ReferenceError: arguments is not defined
+// rest参数...
+let C = (...c) => {
+  console.log(c);
+}
+C(3,82,32,11323);  // [3, 82, 32, 11323]
+
+/** 自执行函数 **/
+// 普通
+(function(){
+    console.log(1)
+}())
+// 箭头(直接语法错误Uncaught SyntaxError: Unexpected token '(')
+(() => {
+    console.log(1)
+}())
+```
 ### map和set结构
 
 **Map结构：** 对象是创建无序键值对数据结构映射的主要机制，在ES6之前，对象的属性只能是字符串，在ES6之后，`Map`结构允许使用对象、数组等作为键。`Map`结构的方法或者属性如下：
