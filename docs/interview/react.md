@@ -924,23 +924,6 @@ setState修改之后会生成dirtyComponents(可能是当前组件或者子组�
 * DOM需要渲染时暂停，空闲时恢复重启各个子任务的执行
 * window.requestIdleCallback
 :::
-### Vue 和 React一些区别
-:::tip
-**相同点**
-1. 都支持组件化
-2. 都是数据驱动视同
-3. 都使用vdom操作dom
-**不同点**
-1. React 使用JSX拥抱JS, Vue使用模板拥抱html
-2. React函数式编程,Vue声明式编程
-3. React更多需要自力更生(手动挡)，Vue把想要的都给你
-**细的**
-4. `Vue` 定义了很多指令(如v-for、v-if)去实现一些展示，`React` 主要还是依赖JS方法去实现
-5. `Vue` 绑定事件 `Event` 是原生的和DOM事件一样, 而 `React` 是封装组合之后的 `SyntheticBaseEvent` 需要访问`nativeEvent` 才能获取原生`Event`。
-6. `Vue` 使用 `v-model` 语法糖实现双向数据绑定，而`React`则需要自己绑定`onChange` 事件
-
-:::
-
 ## Hooks
 :::tip
 **历史问题：**
@@ -1195,3 +1178,18 @@ function Counter(){
     return (<h2>{count}</h2>)
 }
 ```
+### Vue 和 React一些区别
+:::tip
+**相同点**
+1. 都支持组件化
+2. 都是数据驱动视同
+3. 都使用vdom操作dom
+**不同点**
+1. React 使用JSX拥抱JS, Vue使用模板拥抱html
+2. React函数式编程,Vue声明式编程
+3. React更多需要自力更生(手动挡)，Vue把想要的都给你
+**细的**
+4. `Vue` 定义了很多指令(如v-for、v-if)去实现一些展示，`React` 主要还是依赖JS方法去实现
+5. `Vue` 绑定事件 `Event` 是原生的和DOM事件一样, 而 `React` 是封装组合之后的 `SyntheticBaseEvent` 需要访问`nativeEvent` 才能获取原生`Event`。
+6. `Vue` 使用 `v-model` 语法糖实现双向数据绑定，而`React`则需要自己绑定`onChange` 事件
+:::

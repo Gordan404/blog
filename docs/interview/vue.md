@@ -193,8 +193,6 @@ methodsToPatch.forEach((method) => {
   };
 });
 ```
-
-
 ### 响应式系统的依赖收集追踪原理
 :::tip
 在拦截器(Object.defineProperty)里，在它的闭包中会有一个观察者(Dep)对象，这个对象用来存放被观察者(watcher)的实例。
@@ -844,7 +842,7 @@ export default {
 keep-alive 是 Vue 内置的一个组件，可以实现组件缓存，当组件切换时不会对当前组件进行卸载。
 * 常用的两个属性 include/exclude/max，允许组件有条件的进行缓存。
 * 两个生命周期 activated/deactivated，用来得知当前组件是否处于活跃状态。
-* keep-alive 的中还运用了 LRU(最近最少使用) 算法，选择最近最久未使用的组件予以淘汰。
+* keep-alive 的中还运用了 **LRU(最近最少使用)** 算法，选择最近最久未使用的组件予以淘汰。
 1. 在首次加载被包裹组件时，由keep-alive.js中的render函数可知，vnode.componentInstance的值是undfined，keepAlive的值是true，因为keep-alive组件作为父组件，它的render函数会先于被包裹组件执行；那么只执行到i(vnode,false)，后面的逻辑不执行；
 2. 再次访问被包裹组件时，vnode.componentInstance的值就是已经缓存的组件实例，那么会执行insert(parentElm, vnode.elm, refElm)逻辑，这样就直接把上一次的DOM插入到父元素中。
 :::
@@ -1091,6 +1089,59 @@ export default function initExtend(Vue) {
   };
 }
 ```
+### Vue插槽实现原理
+:::tip
+1. slot的内容是在子组件渲染的时候才开始创建vnode节点的，然后渲染在子组件的对应节点中。
+2. 通过对创建slot内容的vnode函数通过withCtx包装，实现slot中访问的是父组件的作用域
+3. 作用域插槽原理：因为子组件渲染的时候才会开始执行创建slot的vnode，所以在创建slot的vnode时，将子组件的实例作为参数传进去，则slot中可以访问到子组件作用域的数据
+* 如果是`普通插槽`，就直接调用函数生成 vnode，如果是 `作用域插槽`，就直接带着 props 也就是 { msg } 去调用函数生成 vnode。 2.6 版本后统一为函数的插槽降低了很多心智负担
+* 类比 `React` 中的 `renderProps`去理解就好了.
+```js
+<test>
+  <template v-slot:bar>
+    <span>Hello</span>
+  </template>
+  <template v-slot:foo="prop">
+    <span>{{prop.msg}}</span>
+  </template>
+</test>
+
+with (this) {
+  return _c("test", {
+    scopedSlots: _u([
+      {
+        key: "bar",
+        fn: function () {
+          return [_c("span", [_v("Hello")])];
+        },
+      },
+      {
+        key: "foo",
+        fn: function (prop) {
+          return [_c("span", [_v(_s(prop.msg))])];
+        },
+      },
+    ]),
+  });
+}
+
+slots: {
+  xxoo: h('div')
+}
+// 作用域插槽
+scopedSlots: {
+  xxoo: (scopedData) => h('div', scopedData.a)
+}
+
+// 作用域插槽和普通插槽的区别在于，子组件拿到它的时候它还是一个函数，只有你执行该函数，它才会返回要渲染的内容(即vnode)，所以可以统一为:
+
+// 普通插槽
+slots: {
+  xxoo: () => h('div')
+}
+
+
+```
 ### Vue自定义指令作用和原理
 :::tip
 指令本质上是装饰器，是 vue 对 HTML 元素的扩展，给 HTML 元素增加自定义功能。vue 编译 DOM 时，会找到指令对象，执行指令的相关方法。(例如:v-html、v-transfer-dom实现dom挂载指定节点、v-copy实现复制、实现按钮权限控制或者点击特效)
@@ -1106,7 +1157,6 @@ export default function initExtend(Vue) {
 2. 通过 genDirectives 生成指令代码
 3. 在 patch 前将指令的钩子提取到 cbs 中,在 patch 过程中调用对应的钩子
 4. 当执行指令对应钩子函数时，调用对应指令定义的方法
-
 ### VueX
 ![VUE](../assets/images/interview/22.png)
 :::tip
