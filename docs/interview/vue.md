@@ -668,6 +668,55 @@ export default {
 }
 </script>
 ```
+### Vue中事件绑定@click的原理
+建议阅读有关[Vue源码-事件解析](https://zhuanlan.zhihu.com/p/295392327)
+:::tip
+1. 正则从指令名中取出事件名, 绑定的事件可以有多个或单个放在数组中，并处理事件顺序等
+2. 根据指令的值(表达式)从methods 中得到对应的事件处理函数对象
+3. 给当前元素节点绑定指定事件名和回调函数的dom 事件监听
+4. 指令解析完后, 移除此指令属性
+:::
+```js
+/** 
+一： 是原生的事件绑定
+  <div @click="fn()"></div>
+  with (this){return _c('div',{on:{"click":function($event){return fn()}}})}
+二： 组件的事件绑定
+  <my-component @click.native="fn" @click="fn1"></my- component>
+  with (this){return _c('my-component',{on:{"click":fn1},nativeOn:{"click":function($event){return fn($event)}}})}
+**/
+export const dirRE = /^v-|^@|^:|^#/
+const modifierRE = /\.[^.\]]+(?=[^\]]*$)/g
+export const bindRE = /^:|^\.|^v-bind:/
+export const onRE = /^@|^v-on:/
+// 解析模板属性  用@click="doSomething"为例
+// 再通过addHandler方法将click放入到events数组中
+function processAttrs (el) {
+  const list = el.attrsList // 获取所有属性列表
+  let i, l, name, rawName, value, modifiers, syncGen, isDynamic
+  for (i = 0, l = list.length; i < l; i++) {
+    name = rawName = list[i].name // 这里是事件名称 @click
+    value = list[i].value // 这里是生命的函数名称 doSomething
+    if (dirRE.test(name)) { // 匹配v-或者@开头的指令
+      modifiers = parseModifiers(name.replace(dirRE, '')) // parseModifiers('click')
+      if (modifiers) { // 清除修饰器
+        name = name.replace(modifierRE, '')
+      }
+      if (bindRE.test(name)) { // v-bind
+        ...
+      } else if (onRE.test(name)) { // v-on
+        ...
+        addHandler(el, name, value, modifiers, false, warn, list[i], isDynamic)
+      } else { // normal directives
+        ...指令相关逻辑
+      }
+    } else {
+      ...
+    }
+  }
+}
+
+```
 ### 为什么 data 是一个函数
 :::tip
 组件中的 data 写成一个函数，数据以函数返回值形式定义，这样每复用一次组件，就会返回一份新的对象的独立拷贝data，类似于给每个组件实例创建一个私有的数据空间，让各个组件实例维护各自的数据。而单纯的写成对象形式，就使得所有组件实例共用了一份 data，就会造成一个变了全都会变的结果，跟JS的引用类型相关，而非Vue.
@@ -685,6 +734,39 @@ v-if 在编译过程中会被转化成三元表达式,条件不满足时不渲�
 
 v-show 会被编译成指令，条件不满足时控制样式将对应节点隐藏 （display:none）
 :::
+### v-if 会存在虚拟DOM中？
+:::tip
+不存在，返回一个node节点，render函数通过表达式的值来决定是否生成DOM
+:::
+```js
+// https://github.com/vuejs/vue-next/blob/cdc9f336fd/packages/compiler-core/src/transforms/vIf.ts
+export const transformIf = createStructuralDirectiveTransform(
+  /^(if|else|else-if)$/,
+  (node, dir, context) => {
+    return processIf(node, dir, context, (ifNode, branch, isRoot) => {
+      // ...
+      return () => {
+        if (isRoot) {
+          ifNode.codegenNode = createCodegenNodeForBranch(
+            branch,
+            key,
+            context
+          ) as IfConditionalExpression
+        } else {
+          // attach this branch's codegen node to the v-if root.
+          const parentCondition = getParentCondition(ifNode.codegenNode!)
+          parentCondition.alternate = createCodegenNodeForBranch(
+            branch,
+            key + ifNode.branches.length - 1,
+            context
+          )
+        }
+      }
+    })
+  }
+)
+```
+
 ### computed和watch的区别
 :::tip
 1. `computed` 是计算属性，依赖其他属性计算值，并且 `computed` 的值有缓存(data里不变还是不会重新计算的)，只有当计算值变化才会返回内容，它可以设置 `getter` 和 `setter`。

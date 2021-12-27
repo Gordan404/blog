@@ -668,6 +668,28 @@ T1.add(task)
 T1.add(task)
 T1.run();
 ```
+### 大数相加
+```js
+console.log(sum(11111111111111111, 11111111111111111)) // 22222222222222224
+console.log(sum(9007199254740992, 1))// 9007199254740992
+// “~”运算符（位非）用于对一个二进制操作数逐位进行取反操作。
+// 第 1 步：把运算数转换为 32 位的二进制整数。
+// 第 2 步：逐位进行取反操作。
+// 第 3 步：把二进制反码转换为十进制浮点数。
+function sumStrings(a,b){
+  var res = ''; // 结果
+  var flag = 0;
+  var a = a.toString().split(''); // 转换成数组
+  var b = b.toString().split('');
+  while (a.length || b.length || flag ){
+      flag  += ~~a.pop() + ~~b.pop(); // 从末尾开始相加~~(按位非)取反并转数字
+      // ~~true // 1     ~0 // -1  ~~0 // 0   ~~undefined // 0
+      res = flag  % 10 + res; // 十进制取余数拼接字符串
+      flag  = flag >9; // falg转为1或者0，为了表示进1或进
+  }
+  return res.replace(/^0+/,''); // 去掉开头的0
+}
+```
 ## LeeCode
 ### JS中sort函数的底层实现机制？
 :::tip
