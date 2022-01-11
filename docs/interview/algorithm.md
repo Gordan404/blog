@@ -690,6 +690,73 @@ function sumStrings(a,b){
   return res.replace(/^0+/,''); // 去掉开头的0
 }
 ```
+### koa中间件的实现原理
+```js
+const middleware = async function (ctx, next) {
+  console.log(1)
+  await next()
+  console.log(6)
+}
+
+const middleware2 = async function (ctx, next) {
+  console.log(2)
+  await next()
+  console.log(5)
+}
+
+const middleware3 = async function (ctx, next) {
+  console.log(3)
+  await next()
+  console.log(4)
+}
+// 会依次打印1，2，3，4，5，6
+/* 
+// async await是promise的语法糖，await后面跟一个promise，所以上面的代码可以写成：
+const middleware = function (ctx, next) {
+  console.log(1)
+  next().then(() => {
+    console.log(6)
+  })
+}
+
+const middleware2 = function (ctx, next) {
+  console.log(2)
+  next().then(() => {
+    console.log(5)
+  })
+}
+
+const middleware3 = function (ctx, next) {
+  console.log(3)
+  next().then(() => {
+    console.log(4)
+  })
+}
+ */
+// next要求调用队列中下一个middleware，当达到最后一个的时候resolve。这样最后面的promise先resolve，一直到第一个，这样就是洋葱模型的顺序了
+function compose(middleware) {
+  return function (context, next) {
+    let index = -1
+    return dispatch(0)
+
+    function dispatch(i) {
+      index = i
+      let fn = middleware[i]
+      if (i === middleware.length) fn = next
+      if (!fn) return Promise.resolve()
+      try {
+        return Promise.resolve(fn(context, dispatch.bind(null, i + 1)))
+      } catch (err) {
+        return Promise.reject(err)
+      }
+    }
+  }
+}
+// 1.这是一种尾递归的形式，尾递归的特点是最后返回的值是一个递归的函数调用，这样执行完就会在调用栈中销毁，不会占据调用栈.
+// 2.返回的是一个Promise.resolve包装之后的调用，而不是同步的调用，所以这是一个异步递归，异步递归比同步递归的好处是可以被打断，如果中间有一些优先级更高的微任务，那么可以先执行别的微任务
+// 3.compose是函数复合，把n个middleware复合成一个，参数依然是context和next，这种复合之后依然是一个middleware，还可以继续进行复合。
+
+```
 ## LeeCode
 ### JS中sort函数的底层实现机制？
 :::tip
