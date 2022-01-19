@@ -689,6 +689,8 @@ function sumStrings(a,b){
   }
   return res.replace(/^0+/,''); // 去掉开头的0
 }
+// 补充：关于0.1+0.2 !== 0.3的问题
+// 前面讲到，在JavaScript中，使用浮点数标准IEEE 754表示数字的，在表示小数的时候，在转化二进制的时候有些数是不能完整转化的，好比0.3，转化成二进制是一个很长的循环的数，是超过了JavaScript能表示的范围的，因此近似等于0.30000000000000004
 ```
 ### koa中间件的实现原理
 ```js
@@ -1295,6 +1297,107 @@ CQueue.prototype.deleteHead = function () {
 //  var obj = new CQueue()
 //  obj.appendTail(value)
 //  var param_2 = obj.deleteHead()
+```
+### 剑指 Offer II 074. 合并区间
+```js
+/**
+输入：intervals = [[1,3],[2,6],[8,10],[15,18]]
+输出：[[1,6],[8,10],[15,18]]
+解释：区间 [1,3] 和 [2,6] 重叠, 将它们合并为 [1,6].
+
+输入：intervals = [[1,4],[4,5]]
+输出：[[1,5]]
+解释：区间 [1,4] 和 [4,5] 可被视为重叠区间。
+**/
+
+var merge = function (arr) {
+  let res = [];
+  arr.sort((a, b) => a[0] - b[0]); // 可能是无序的
+  let prev = arr[0]; // 上一个
+  for (let i = 1; i < arr.length; i++) {
+    let cur = arr[i];
+    if (prev[1] >= cur[0]) { // 有重合  上一次结尾大于或等于 这次开头
+      prev[1] = Math.max(cur[1], prev[1]); // 这次结尾和上次结尾哪个大
+    } else {       // 不重合，prev推入res数组 
+      res.push(prev);
+      prev = cur;  // 更新 prev
+    }
+  }
+  res.push(prev);
+  return res;
+};
+```
+### 接雨水
+```js
+/**
+输入：height = [0,1,0,2,1,0,1,3,2,1,2,1]
+输出：6
+解释：上面是由数组 [0,1,0,2,1,0,1,3,2,1,2,1] 表示的高度图，在这种情况下，可以接 6 个单位的雨水（蓝色部分表示雨水）
+输入：height = [4,2,0,3,2,5]
+输出：9
+**/
+// 很明显，雨水接的大小取决于木桶效应，也就是当前元素左右两边最大高度中较矮的那个高度的大小
+// 例：[0,1,0,2,1,0,1,3,2,1,2,1]
+// 假设当前判断第三个元素，也就是0可以接多少雨水
+// 很明显0左边最大高度为1(第二个元素)，右边最大高度为3(第7个元素)
+// 那么0可以接的雨水量 = 左右两边最大高度中较矮的那个高度(即1) - 0自身的高度(即0) => 0
+// 因此，可以循环整个数组，数组中的每一项都寻找左边最高的高度和右边最高的高度
+// 当且仅当，当前项的高度 < 左右两边较矮的那个高度时，能够接水
+// 且接水量 = 左右两边最大高度中较矮的那个高度 - 当前项的高度
+var trap = function(height) {
+    let sum = 0
+    for(let index=1; index<height.length-1; index++){
+        let leftMax = 0 //找左边最大高度
+        for(let i=index-1; i>=0; i--){
+            leftMax = height[i] >= leftMax ? height[i] : leftMax
+        }
+        let rightMax = 0 //找右边最大高度
+        for(let i=index+1; i<height.length; i++){
+            rightMax = height[i] >= rightMax ? height[i] : rightMax
+        }
+        let min = Math.min(leftMax, rightMax) //得到左右两边最大高度中较矮的那个高度
+        if(min > height[index]){
+            sum = sum + min - height[index] //接水量 = 左右两边最大高度中较矮的那个高度 - 当前项的高度
+        }
+        //console.log(leftMax, rightMax, sum)
+    }
+    return sum
+};
+```
+### 最小路径之和
+```js
+// 给定一个包含非负整数的 m x n 网格 grid ，请找出一条从左上角到右下角的路径，使得路径上的数字总和为最小。
+// 说明：一个机器人每次只能向下或者向右移动一步。
+// 输入：grid = [[1,3,1],[1,5,1],[4,2,1]]
+// 输出：7
+// 解释：因为路径 1→3→1→1→1 的总和最小。
+
+// 5. 动态规划：从起始点到终点
+var minPathSum3 = function(grid) {
+    const m = grid.length, n = grid[0].length
+
+    // 状态定义：dp[i][j] 表示从 [0,0] 到 [i,j] 的最小路径和
+    const dp = new Array(m).fill(0).map(() => new Array(n).fill(0))
+
+    // 状态初始化
+    dp[0][0] = grid[0][0]
+
+    // 状态转移
+    for (let i = 0; i < m ; i++) {
+        for (let j = 0; j < n ; j++) {
+            if (i == 0 && j != 0) {
+                dp[i][j] = grid[i][j] + dp[i][j - 1]
+            } else if (i != 0 && j == 0) {
+                dp[i][j] = grid[i][j] + dp[i - 1][j]
+            } else if (i != 0 && j != 0) {
+                dp[i][j] = grid[i][j] + Math.min(dp[i - 1][j], dp[i][j - 1])
+            }
+        }
+    }
+
+    // 返回结果
+    return dp[m - 1][n - 1]
+}
 ```
 ## 链表
 :::tip
