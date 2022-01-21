@@ -777,12 +777,21 @@ export default connect(mapStateToProps, mapDispatchToProps)(Form)
 ### Redux 中间件
 ![中间件](../assets/images/interview/42.jpg)
 :::tip
-`dispatch`一个`action`之后，到达`reducer`之前，进行一些额外的操作，就需要用到`middleware`。 
-可以利用 `Redux middleware` 来进行日志记录、创建崩溃报告、调用异步接口或者路由等等,Redux store默认仅支持同步数据流,使用 thunk中间件 可以帮助在 Redux 应用中实现 异步的reducer(redux-thunk、redux-promise、redux-saga)
+* 中间件（英语：Middleware），又译中间件、中介层，是一类提供系统软件和应用软件之间连接、便于软件各部件之间的沟通的软件，应用软件可以借助中间件在不同的技术架构之间共享信息与资源。中间件位于客户机服务器的操作系统之上，管理着计算资源和网络通信。
+
+* redux中间件的中间指的是action和store之间，之前在redux中action只能返回一个对象，所以action返回的一个对象会直接派发给store，现在使用redux-thunk之后action可以返回一个函数了，action通过dispatch方法被传递给store，那么action和store之间就是dispatch这个方法。实际上中间件就是对dispatch方法的一个封装或者说对dispatch方法的一个升级。
+:::
+:::tip
+`redux` 提供了类似后端 Express 的中间件概念，本质的目的是提供第三方插件的模式，自定义拦截 `action` -> `reducer` 的过程。变为 `action` -> `middlewares` -> `reducer` 。这种机制可以让我们改变数据流，实现如异步 `action` ，`action` 过滤，日志输出，异常报告等功能。
+
+Redux store默认仅支持同步数据流,使用 thunk中间件 可以帮助在 Redux 应用中实现 异步的reducer(redux-thunk、redux-promise、redux-saga)
 1. 调动dispatch派发一个新 action 对象
 2. 调用 getState 获得当前 Redux Store 上的状态
 3. 调用 next 告诉 Redux 当前中间件工作完毕，让 Redux 调用下一个中间件
 4. 访问 action 对象 action 上的所有数据
+
+* view -> action -> reducer -> store
+* view -> action -> middleware -> reducer -> store
 :::
 函数柯里化[函数柯里化](https://www.jianshu.com/p/2975c25e4d71)
 ```js
