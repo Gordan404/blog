@@ -46,7 +46,6 @@ function param(data) {
 }
 ```
 
-
 ### 根据对象路径获取值lodash._get
 ```js
 // 简版lodash._get
@@ -76,7 +75,49 @@ function _get (source, path) {
 }
 get_(obj, 'a.b[0].name')
 ```
+### js封装cookie
+```js
+function getDomain() {
+  let domain = document.domain;
+  domain = domain.split('.');
+  return domain[domain.length - 2] + '.' + domain[domain.length - 1];
+}
 
+function setCookie(name, value, minute) {
+  let exp = new Date();
+  let numMinute = minute || 720; //默认过期时间12小时
+
+  exp.setTime(exp.getTime() + numMinute * 60 * 1000);
+  const path = '/';
+  const domain = '.' + getDomain();
+  const secure = false;
+  document.cookie = name + "=" + escape(value) + ((exp == null) ? "" : ("; expires=" + exp.toGMTString())) + ((path == null) ? "" : ("; path=" + path)) + ((domain == null) ? "" : ("; domain=" + domain)) + ((secure === true) ? "; secure" : "");
+}
+
+function delCookie(name) {
+  let exp = new Date();
+  exp.setTime(exp.getTime() - 1);
+  const cval = getCookie(name);
+  document.cookie = name + '=' + cval + ';expires=' + exp.toGMTString() + '; path=/; domain=.' + getDomain();
+}
+
+function getCookie(name) {
+  const arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
+  if (arr != null) {
+      return (unescape(arr[2]));
+  }
+  return "";
+}
+
+const cookie = {
+  get: getCookie,
+  set: setCookie,
+  del: delCookie,
+  getDomain: getDomain
+};
+
+export default cookie;
+```
 ### 手写call、apply和bind方法
 ```js
 // call
@@ -403,6 +444,57 @@ let newObj = deepClone(obj)
 newObj.b.c = 1
 console.log(obj.b.c) // 2
 ```
+### 手写实现jsonStringify
+```js
+function jsonStringify(data) {
+  let type = typeof data;
+  if(type !== 'object') {
+    let result = data;
+    if (Number.isNaN(data) || data === Infinity) {
+       //NaN 和 Infinity 序列化返回 "null"
+       result = "null";
+    } else if (type === 'function' || type === 'undefined' || type === 'symbol') {
+      // 由于 function 序列化返回 undefined，因此和 undefined、symbol 一起处理
+       return undefined;
+    } else if (type === 'string') {
+       result = '"' + data + '"';
+    }
+    return String(result);
+  } else if (type === 'object') {
+     if (data === null) {
+        return "null"  
+     } else if (data.toJSON && typeof data.toJSON === 'function') {
+       // 返回字符串的 Date 对象，并格式化为 JSON 数据:
+         // 对象可能内置toJSON方法来自定义序列化对象
+        return jsonStringify(data.toJSON());
+     } else if (data instanceof Array) {
+        let result = [];
+        data.forEach((item, index) => {
+        if (typeof item === 'undefined' || typeof item === 'function' || typeof item === 'symbol') {
+               result[index] = "null";
+           } else {
+               result[index] = jsonStringify(item);
+           }
+         });
+         result = "[" + result + "]";
+         return result.replace(/'/g, '"');
+      } else {
+         // 处理普通对象
+         let result = [];
+         Object.keys(data).forEach((item, index) => {
+            if (typeof item !== 'symbol') {
+              //key 如果是 symbol 对象，忽略
+              if (data[item] !== undefined && typeof data[item] !== 'function' && typeof data[item] !== 'symbol') {
+                //键值如果是 undefined、function、symbol 为属性值，忽略
+                result.push('"' + item + '"' + ":" + jsonStringify(data[item]));
+              }
+            }
+         });
+         return ("{" + result + "}").replace(/'/g, '"');
+        }
+    }
+}
+```
 ### 手写数组去重方法
 ```js
 // ES6
@@ -440,6 +532,29 @@ function unique2 (arr) {
   return newArray;
 }
 
+```
+### 迭代器
+```js
+let myIterator = (arr) => {
+  let index = 0
+  return {
+    next: () => {
+      return {
+        value: arr[index++] || undefined,
+        done: index > arr.length
+      }
+    }
+  }
+}
+
+// test
+let arr = [1, 4, 'ads']
+let iteratorObj = myIterator(arr)
+console.log(iteratorObj.next()) // { value: 1, done: false }
+console.log(iteratorObj.next()) // { value: 4, done: false }
+console.log(iteratorObj.next()) // { value: 'ads', done: false }
+console.log(iteratorObj.next()) // { value: undefined, done: true }
+console.log(iteratorObj.next()) // { value: undefined, done: true }
 ```
 ### 数组平铺
 ```js
@@ -761,6 +876,7 @@ function compose(middleware) {
 ```
 ## LeeCode
 ### JS中sort函数的底层实现机制？
+![排序](../assets/images/interview/51.png)
 :::tip
 js中`sort`内置多种排序算法，是根据要排序数的乱序程度来决定使用哪一种排序方法。V8 引擎 sort 函数只给出了两种排序 `InsertionSort` 和 `QuickSort`，长度小于20的使用InsertionSort(插入排序)，大于20的数组则使用 QuickSort(快速排序)
 :::
